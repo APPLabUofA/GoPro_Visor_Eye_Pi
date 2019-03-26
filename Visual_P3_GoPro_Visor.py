@@ -8,7 +8,7 @@ from random import randint, shuffle
 import numpy
 
 ##setup some constant variables##
-partnum = '001'
+partnum = input("partnum: ")
 filename = 'visual_p3_gopro_visor'
 
 ##number of trials##
@@ -125,7 +125,14 @@ trig_time   = []
 trig_type = []
 delay_length  = []
 trial_resp = []
+jitter_length = []
+first_light_difference = []
+second_light_difference = []
 
+trial_resp.append(0)
+jitter_length.append(0)
+first_light_difference.append(0)
+second_light_difference.append(0)
 ##setup our neopixels##
 pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness)
 
@@ -149,6 +156,7 @@ for i_trial in range(len(trials)):
     ###wait for a random amount of time between tones###
     delay = ((randint(0,500)*0.001)+1.0)
     delay_length.append(delay)
+    after_delay = time.time()
     ##determine the type of stimuli we will show on this trial##
     if trials[i_trial] == 0: #standards
         trig = 1
@@ -159,19 +167,36 @@ for i_trial in range(len(trials)):
         pixels.fill(blue)
 ##                pi.write(17, 1)
     GPIO.output(pi2trig(trig),1)
+    first_light_difference.append(time.time() - start_trial)
     trig_type.append(trig)
     trig_time.append(time.time() - start_exp)
     time.sleep(trig_gap)
+    before_second_light = time.time() - start_exp
     GPIO.output(pi2trig(255),0)
+    after_second_light = time.time() - start_exp
     resp_time = get_resp_led_off(resp_pin, 1.0)
     resp_time = get_resp(resp_pin, delay, 1.0, resp_time)
     trial_resp.append(resp_time)
-    end_trial = time.time()
-    print(end_trial - start_trial)
-    print(delay + 1.0)
+       
+##    print("start time" start_trial)
+##    print("after delay time" start_trial)
+    
+##    print("trial length w/o processing" delay + 1.0)
     GPIO.output(pi2trig(255),0)
     time.sleep(trig_gap)
+    end_trial = time.time()
+    
+    actual_trial_length = end_trial - start_trial
+    theoretical_trial_length = delay + 1.0
+    jitter = actual_trial_length - theoretical_trial_length
+    jitter_length.append(jitter)
+    second_light_difference.append(after_second_light - before_second_light)
+    
 
+##    print("actual_trial_length = {}".format(actual_trial_length))
+##    print("theoretical_trial_length = {}".format(theoretical_trial_length))
+##    print("Jitter is {}".format(jitter))
+    
 ##end of experiment##
 pixels.fill(red)
 time.sleep(2)
@@ -179,7 +204,7 @@ pixels.fill(blank)
 time.sleep(2)
 
 ###save trial information###
-filename_part = ("/home/pi/Experiments/Visual_P3_GoPro_Visor/Data/Amp/Trial_Information/" + partnum + "_" + filename + ".csv")
+filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/data" + partnum + "_" + filename + ".csv")
 
-numpy.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp), delimiter=',',fmt="%s")
+numpy.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, jitter_length, first_light_difference, second_light_difference), delimiter=',',fmt="%s")
 
