@@ -12,8 +12,8 @@ partnum = input("partnum: ")
 filename = 'visual_p3_gopro_visor'
 
 ##number of trials##
-trial_num = 1000
-
+trial_num = int(input("How many trials?: "))
+    
 ##standard and target rate##
 standard_rate = 0.8
 target_rate = 0.2
@@ -36,7 +36,7 @@ trig_pins = [4,17,27,22,5,6,13,19]
 resp_pin = 21
 
 ##amount of time needed to reset triggers##
-trig_gap = 0.005
+trig_gap = 0.010
 
 ##define the ip address for the second Pi we will be controlling##
 ##pi = pigpio.pi('192.168.1.216')
@@ -70,8 +70,19 @@ def pi2trig(trig_num):
             trig_pos = trig_pos + 1
     
     return trig_pins
+
+def resp_trig(trig): # maps response trigger to standard (3) or target (4)
+    if trig == 1:
+        resp_trig = 3
+    else:
+        resp_trig = 4
+    GPIO.output(pi2trig(resp_trig),1)
+    time.sleep(trig_gap)
+    GPIO.output(pi2trig(255),0)
+    time.sleep(trig_gap)      
+        
     
-def get_resp_led_off(pin, led_on_time): # get response (if occured in first 1 second) + turn off the LEDs regardless
+def get_resp_led_off(pin, led_on_time,trig): # get response (if occured in first 1 second) + turn off the LEDs regardless
     start_resp = time.time()
     
     GPIO.wait_for_edge(pin,GPIO.RISING, timeout = int(led_on_time * 1000))
@@ -79,10 +90,7 @@ def get_resp_led_off(pin, led_on_time): # get response (if occured in first 1 se
     button_down = time.time() - start_resp # this is response time from the start of the 1 second response window
     
     if button_down < led_on_time: ## right now this isn't making any sense to me
-        GPIO.output(pi2trig(3),1)
-        time.sleep(trig_gap)
-        GPIO.output(pi2trig(3),0)
-        time.sleep(trig_gap)
+        resp_trig(trig)
         resp_time = button_down
         time.sleep(led_on_time - (button_down + trig_gap*2)) # wait until the end of the 1 second of the light being on
     else:
@@ -91,22 +99,23 @@ def get_resp_led_off(pin, led_on_time): # get response (if occured in first 1 se
     before_second_light = time.time() - start_exp
     pixels.fill(blank)
     after_second_light = time.time() - start_resp
-    GPIO.output(pi2trig(4),1)
+    GPIO.output(pi2trig(5),1)
     time.sleep(trig_gap)
-    GPIO.output(pi2trig(4),0)
+    GPIO.output(pi2trig(255),0)
 
     return (resp_time, before_second_light, after_second_light)
 
-def get_resp(pin, wait_time, prev_delay, resp): # get response (if not in the first second) + wait for wait time (delay)
+def get_resp(pin, wait_time, prev_delay, resp, trig): # get response (if not in the first second) + wait for wait time (delay)
     start_resp = time.time()
 
     GPIO.wait_for_edge(pin,GPIO.RISING, timeout = int(wait_time * 1000))
     
     delay_end_time = time.time() - start_resp
-    GPIO.output(pi2trig(5),1)
 
     if resp == 0:
         resp_time = delay_end_time + prev_delay
+        if start_resp <= 2000:
+            resp_trig(trig)
     else:
         resp_time = resp
 
@@ -130,6 +139,7 @@ trial_resp = []
 jitter_length = []
 first_light_difference = [] # how long it takes from starting experiment to end of first light being turned on
 second_light_difference = [] # duration of turning off light from the get_response_off function
+start_stop = []
 
 trial_resp.append(0)
 jitter_length.append(0)
@@ -145,7 +155,8 @@ GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to
 pixels.fill(red)
 GPIO.output(pi2trig(10),1) # send unique trigger
 start_exp = time.time()
-trig_time.append(time.time() - start_exp) # very small increment
+start_stop.append(start_exp)
+trig_time.append(time.time() - start_exp) # this adds a very small increment
 trig_type.append(3)
 delay_length.append(2)
 time.sleep(2)
@@ -175,15 +186,15 @@ for i_trial in range(len(trials)):
     time.sleep(trig_gap)
     
     GPIO.output(pi2trig(255),0)
-    resp_time, before_second_light, after_second_light = get_resp_led_off(resp_pin, 1.0)
-    resp_time = get_resp(resp_pin, delay, 1.0, resp_time)
+    resp_time, before_second_light, after_second_light = get_resp_led_off(resp_pin, 1.0,trig)
+    resp_time = get_resp(resp_pin, delay, 1.0, resp_time,trig)
     trial_resp.append(resp_time)
        
 ##    print("start time" start_trial)
 ##    print("after delay time" start_trial)
     
 ##    print("trial length w/o processing" delay + 1.0)
-    GPIO.output(pi2trig(255),0)
+    GPIO.output(pi2trig(255),0) ## doesn't give us a trigger 
     time.sleep(trig_gap)
     end_trial = time.time()
     
@@ -202,6 +213,9 @@ for i_trial in range(len(trials)):
 pixels.fill(red)
 time.sleep(2)
 pixels.fill(blank)
+GPIO.output(pi2trig(10),1) # send unique trigger
+stop_exp = time.time()
+start_stop.append(stop_exp)
 time.sleep(2)
 
 ###save trial information###
