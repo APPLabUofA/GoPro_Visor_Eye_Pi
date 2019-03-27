@@ -2,13 +2,22 @@
 
 ## General
 
-Completely self-contained - 
+Completely self-contained  
 Goals start indoors and move outside
-Pi is running everything - possibly a panda or a tablet recording 
+Pi is running everything - a tablet recording 
 Visor = LEDs + safety glasses
 
+Prototype 1 
+Visor + button + EEG
+Compare the latencies
 
-## Prototype 1
+A given trial consist of:
+1. random delay period, then
+2. 1 second flash, then
+1 second of 
+
+
+## Experiment 1
 Visor + button + EEG + MP4 Video File (Task 2)
 
 ### Task 1:  indoor, sitting down, fixation cross (otherwise blank screen)
@@ -33,16 +42,16 @@ taking the ~250 fps video stream, reducing it to ~ 24 fps and embedding/drawing 
 (break down the identification of vehicles into 10 major categories and correlate with EEG principle components)
 - These tasks allow us to decide whether to continue with button response and/or focuses of  attention to certain aspects of the environment, or just free wandering
 
-## Prototype 2
+## Experiment 2
 Visor + button + EEG + MP4 Video File + Eye Tracking (Home made rig?)
 
-### Task 3: Task 2 + eye tracking (w/ w/o fixation cross)
+### Task 1: Task 2 + eye tracking (w/ w/o fixation cross)
 
 
 
-## Prototype 3
+## Experiment 3
 Visor + button + EEG + MP4 Video File + Eye Tracking (Home made rig?) + Binocular external video stream (3D Mapping)
 
 Depth Perception Test?
 
-### Task 4: Walk/Bike down sask drive /across the river (in different contexts)
+### Task 1: Walk/Bike down sask drive /across the river (in different contexts)
