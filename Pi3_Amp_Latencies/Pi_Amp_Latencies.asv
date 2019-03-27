@@ -1,7 +1,7 @@
 ccc
 %%%Now we will go through the EEG file and determine our latencies%%%
 filepath = ['M:\Data\GoPro_Visor\Pi_Amp_Latency_Test'];
-filename = ['testing_visor_pi_005.vhdr'];
+filename = ['testing_visor_pi_004.vhdr'];
 
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
 EEG = pop_loadbv(filepath, filename, [], []);
