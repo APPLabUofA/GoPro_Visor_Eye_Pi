@@ -14,7 +14,7 @@ filename = 'visual_p3_gopro_visor'
 ##number of trials##
 trial_num = int(input("How many trials?: "))
 
-## number of blocks
+##number of blocks
 block_num = int(input("How many blocks?: "))
 
 ##standard and target rate##
@@ -39,7 +39,7 @@ trig_pins = [4,17,27,22,5,6,13,19]
 resp_pin = 21
 
 ##amount of time needed to reset triggers##
-trig_gap = 0.010
+trig_gap = 0.005
 
 ##define the ip address for the second Pi we will be controlling##
 ##pi = pigpio.pi('192.168.1.216')
@@ -99,14 +99,14 @@ def get_resp_led_off(pin, led_on_time,trig): # get response (if occured in first
     else:
         resp_time = 0
 
-    before_second_light = time.time() - start_exp
+    # before_second_light = time.time() - start_exp
     pixels.fill(blank)
-    after_second_light = time.time() - start_resp
+    # after_second_light = time.time() - start_resp
     GPIO.output(pi2trig(5),1)
     time.sleep(trig_gap)
     GPIO.output(pi2trig(255),0)
 
-    return (resp_time, before_second_light, after_second_light)
+    return (resp_time) # before_second_light, after_second_light
 
 def get_resp(pin, wait_time, prev_delay, resp, trig): # get response (if not in the first second) + wait for wait time (delay)
     start_resp = time.time()
@@ -127,16 +127,37 @@ def get_resp(pin, wait_time, prev_delay, resp, trig): # get response (if not in 
 
     return resp_time
 
-def rainbow_cycle(wait):
-    for j in range(255):
-        for i in range(pin_num):
-            pixel_index = (i * 256 // pin_num) + j
-            pixels[i] = wheel(pixel_index & 255)
-        pixels.show()
-        time.sleep(wait)
-        count += 1
-        if count >= rainbow_sec * 3
-            while = False
+def wheel(pos):
+    # Input a value 0 to 255 to get a color value.
+    # The colours are a transition r - g - b - back to r.
+    if pos < 0 or pos > 255:
+        r = g = b = 0
+    elif pos < 85:
+        r = int(pos * 3)
+        g = int(255 - pos*3)
+        b = 0
+    elif pos < 170:
+        pos -= 85
+        r = int(255 - pos*3)
+        g = 0
+        b = int(pos*3)
+    else:
+        pos -= 170
+        r = 0
+        g = int(pos*3)
+        b = int(255 - pos*3)
+    return (r, g, b)
+
+
+def rainbow_cycle(wait, rainbow_time):
+    start = time.time()
+    while time.time() - start < rainbow_time:
+        for j in range(255):
+            for i in range(pin_num):
+                pixel_index = (i * 256 // pin_num) + j
+                pixels[i] = wheel(pixel_index & 255)
+            pixels.show()
+            time.sleep(wait)
 
 ##define the ip address for the second Pi we will be controlling##
 ##pi = pigpio.pi('192.168.1.216')
@@ -151,22 +172,21 @@ trig_type = []
 delay_length  = []
 trial_resp = []
 jitter_length = []
-first_light_difference = [] # how long it takes from starting experiment to end of first light being turned on
-second_light_difference = [] # duration of turning off light from the get_response_off function
+resp_latency = []
+#first_light_difference = [] # how long it takes from starting experiment to end of first light being turned on
+#second_light_difference = [] # duration of turning off light from the get_response_off function
 start_stop = []
 
-trial_resp.append(0)
-jitter_length.append(0)
-first_light_difference.append(0)
-second_light_difference.append(0)
+#first_light_difference.append(0)
+#second_light_difference.append(0)
 ##setup our neopixels##
-pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness)
+pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write = True)
 
 ##to significy the start of the experiment##
 ##let's make the LEDs all red initially##
 ##and then wait for a certain amount of time##
 
-for blocks in range(len(block_num)):
+for blocks in range(block_num):
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
     pixels.fill(red)
     GPIO.output(pi2trig(10),1) # send unique trigger
@@ -175,12 +195,15 @@ for blocks in range(len(block_num)):
     trig_time.append(time.time() - start_exp) # this adds a very small increment
     trig_type.append(3)
     delay_length.append(2)
+    trial_resp.append(0)
+    jitter_length.append(0)
+    resp_latency.append(0)
     time.sleep(2)
     pixels.fill(blank)
     GPIO.output(pi2trig(255),0) # not sure yet what this is, confirm that a pin is off?
     time.sleep(2)
     for i_trial in range(len(trials)):
-        start_trial = time.time() + 0.005 # why not move this forward to directly before the light? or add 5 ms
+        start_trial = time.time() + trig_gap # why not move this forward to directly before the light? or add 5 ms
         ###wait for a random amount of time between tones###
         delay = ((randint(0,500)*0.001)+1.0) # define delay, to be used later
         delay_length.append(delay)
@@ -195,14 +218,15 @@ for blocks in range(len(block_num)):
     ##                pi.write(17, 1)
         GPIO.output(pi2trig(trig),1) ## Specify which trigger to send Standard vs Target
 
-        first_light_difference.append(time.time() - start_trial) # lag time between the start of trial and finish turning on the LED
+        #first_light_difference.append(time.time() - start_trial) # lag time between the start of trial and finish turning on the LED
         trig_type.append(trig)
         trig_time.append(time.time() - start_exp)
         time.sleep(trig_gap)
 
         GPIO.output(pi2trig(255),0)
-        resp_time, before_second_light, after_second_light = get_resp_led_off(resp_pin, 1.0,trig)
+        resp_time = get_resp_led_off(resp_pin, 1.0,trig) # before_second_light, after_second_light
         resp_time = get_resp(resp_pin, delay, 1.0, resp_time,trig)
+        resp_latency.append(resp_time + start_trial)
         trial_resp.append(resp_time)
 
     ##    print("start time" start_trial)
@@ -217,7 +241,7 @@ for blocks in range(len(block_num)):
         theoretical_trial_length = delay + 1.0
         jitter = actual_trial_length - theoretical_trial_length
         jitter_length.append(jitter)
-        second_light_difference.append(after_second_light - before_second_light)
+    #    second_light_difference.append(after_second_light - before_second_light)
 
 
     ##    print("actual_trial_length = {}".format(actual_trial_length))
@@ -229,17 +253,29 @@ for blocks in range(len(block_num)):
     time.sleep(2)
     pixels.fill(blank)
     GPIO.output(pi2trig(10),1) # send unique trigger
+    trig_time.append(time.time() - start_exp) # this adds a very small increment
+    trig_type.append(3)
+    delay_length.append(2)
+    trial_resp.append(0)
+    jitter_length.append(0)
+    resp_latency.append(0)
     stop_exp = time.time()
     start_stop.append(stop_exp)
     time.sleep(2)
 
-rainbow_sec = 3
+#count = 0
+#rainbow_sec = 3
+#rainbow_cycle(0.001)
+rainbow_cycle(0.001, 5)
 
-while True:
-    rainbow_cycle(0.001)
-
+pixels.fill(blank)
 
 ###save trial information###
-filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/data" + partnum + "_" + filename + ".csv")
+filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/Pi3_Amp_Latencies/Pi_Time_Data" + partnum + "_" + filename + ".csv")
 
-numpy.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, jitter_length, first_light_difference, second_light_difference), delimiter=',',fmt="%s")
+#What is each thing
+#
+#
+#
+
+numpy.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, jitter_length, resp_latency), delimiter=',',fmt="%s")
