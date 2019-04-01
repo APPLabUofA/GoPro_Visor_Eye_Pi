@@ -12,7 +12,7 @@ partnum = input("partnum: ")
 filename = 'visual_p3_gopro_visor'
 
 ##number of trials##
-trial_num = int(input("How many trials?: "))
+trial_num = int(input("How many trials per block?: "))
 
 ##number of blocks
 block_num = int(input("How many blocks?: "))
@@ -106,7 +106,7 @@ def get_resp_led_off(pin, led_on_time,trig): # get response (if occured in first
     time.sleep(trig_gap)
     GPIO.output(pi2trig(255),0)
 
-    return (resp_time) # before_second_light, after_second_light
+    return resp_time # before_second_light, after_second_light
 
 def get_resp(pin, wait_time, prev_delay, resp, trig): # get response (if not in the first second) + wait for wait time (delay)
     start_resp = time.time()
