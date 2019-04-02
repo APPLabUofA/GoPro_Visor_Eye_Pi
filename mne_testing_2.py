@@ -26,7 +26,7 @@ colours = ['black', 'red']
 conditions = ["Standards", "Targets"]
 
 #load our data#
-filename = "M:\\Data\\PandaAmp\\014_panda_p3_panda.vhdr"
+filename = 'M:\Data\GoPro_Visor\Pi_Amp_Latency_Test\testing_visor_pi_012.vhdr'
 raw = mne.io.read_raw_brainvision(filename)
 
 #specify montage, EOGs, and reference#
