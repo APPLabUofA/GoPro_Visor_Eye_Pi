@@ -23,6 +23,18 @@ county = 1;
 %     end
 % end
 
+% Tigger Meanings
+% 1 Standard Onset 
+% 2 Target Onset
+% 3 Standard Response
+% 4 Target Response
+% 5 Standard Offset
+% 6 Target Offset
+% 10 Block Start
+% 11 Block End
+% 12 Experiment Start
+% 13 Experiment End
+
 for i_event = 3:(length(ALLEEG(1).event)-1)
     if ALLEEG(1).event(i_event).type(4) == '1' || ALLEEG(1).event(i_event).type(4) == '2'
         EEG_latency = (ALLEEG(1).event(i_event).latency - start_trigger)/ALLEEG.srate;
