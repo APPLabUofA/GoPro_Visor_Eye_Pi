@@ -1,13 +1,17 @@
 ccc
+
+trials = 250;
+blocks = 1;
+
 %%%Now we will go through the EEG file and determine our latencies%%%
 filepath = ['M:\Data\GoPro_Visor\Pi_Amp_Latency_Test'];
-filename = ['testing_visor_pi_005.vhdr'];
+filename = ['testing_visor_pi_012.vhdr'];
 
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab;
 EEG = pop_loadbv(filepath, filename, [], []);
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'setname','timingtest','gui','off');
 
-trials = 500;
+
 start_trigger = ALLEEG(1).event(2).latency;
 EEG_latencies = zeros(1,trials);
 EEG_latencies = [];
@@ -23,8 +27,20 @@ county = 1;
 %     end
 % end
 
-for i_event = 3:(length(ALLEEG(1).event)-1)
-    if ALLEEG(1).event(i_event).type(4) == '1' || ALLEEG(1).event(i_event).type(4) == '2'
+% Tigger Meanings
+% 1 Standard Onset 
+% 2 Target Onset
+% 3 Standard Response
+% 4 Target Response
+% 5 Standard Offset
+% 6 Target Offset
+% 10 Block Start
+% 11 Block End
+% 12 Experiment Start
+% 13 Experiment End
+
+for i_event = 3:(length(ALLEEG(1).event)-1) % skips the first two and the last 1
+    if ALLEEG(1).event(i_event).type(4) == '1' || ALLEEG(1).event(i_event).type(4) == '2' % only adds the onset of standards and targets to a list called latency
         EEG_latency = (ALLEEG(1).event(i_event).latency - start_trigger)/ALLEEG.srate;
         EEG_latencies(county) = EEG_latency;
         county = county + 1;
@@ -35,9 +51,10 @@ end
 %%%need to subtract 5 from these since there is 5 seconds before
 %%%the red LEDs, indicating the start, are turned on%%%
 % % % trig_type,trig_time, delay_length, trial_resp, jitter_length, first_light_difference, second_light_difference
-pi_recorded_times = csvread('C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Pi_Time_Data\data005_visual_p3_gopro_visor.csv',0,1,[0,1,6,trials]); %,1,0,[1,0,1,249]
+pi_recorded_times = readtable('C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Pi_Time_Data\011_visual_p3_gopro_visor.csv',1,0,[1,0,6,trials])
+
 %%% pi_recorded_times = pi_recorded_times - 5;
-pi_type = pi_recorded_times(1,:); % trig type
+pi_type = pi_recorded_times(1,:); % trig type - 1 is standard 2 is target
 pi_latency = pi_recorded_times(2,:); % trig time latency
 pi_delay = pi_recorded_times(3,:); % delay length
 pi_resp = pi_recorded_times(4,:); % trial resp
