@@ -11,12 +11,10 @@ filename = ['testing_visor_pi_012.vhdr'];
 EEG = pop_loadbv(filepath, filename, [], []);
 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, 0,'setname','timingtest','gui','off');
 
-
 start_trigger = ALLEEG(1).event(2).latency;
 EEG_latencies = zeros(1,trials);
 EEG_latencies = [];
 EEG_latency = 0;
-county = 1;
 
 % for i_event = 3:(length(ALLEEG(1).event)-1)
 %     if EEG.event(i_event).type(4) == '1' || EEG.event(i_event).type(4) == '2'
@@ -43,7 +41,6 @@ for i_event = 3:(length(ALLEEG(1).event)-1) % skips the first two and the last 1
     if ALLEEG(1).event(i_event).type(4) == '1' || ALLEEG(1).event(i_event).type(4) == '2' % only adds the onset of standards and targets to a list called latency
         EEG_latency = (ALLEEG(1).event(i_event).latency - start_trigger)/ALLEEG.srate;
         EEG_latencies(county) = EEG_latency;
-        county = county + 1;
     end
 end
 
@@ -51,7 +48,7 @@ end
 %%%need to subtract 5 from these since there is 5 seconds before
 %%%the red LEDs, indicating the start, are turned on%%%
 % % % trig_type,trig_time, delay_length, trial_resp, jitter_length, first_light_difference, second_light_difference
-pi_recorded_times = readtable('C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Pi_Time_Data\011_visual_p3_gopro_visor.csv',1,0,[1,0,6,trials])
+pi_recorded_times = readcsv('C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Pi_Time_Data\011_visual_p3_gopro_visor.csv',1,0,[1,0,6,trials]);
 
 %%% pi_recorded_times = pi_recorded_times - 5;
 pi_type = pi_recorded_times(1,:); % trig type - 1 is standard 2 is target

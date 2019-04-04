@@ -1,0 +1,8 @@
+seaborn
+pandas
+spyder
+pandas
+matplotlib
+numpy
+
+# mne - must get from elsewhere - pip or git clone

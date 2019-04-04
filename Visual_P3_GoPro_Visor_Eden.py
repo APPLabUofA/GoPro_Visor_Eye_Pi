@@ -6,6 +6,7 @@ import RPi.GPIO as GPIO
 import time
 from random import randint, shuffle
 import numpy
+import pygame
 
 ##setup some constant variables##
 partnum = input("partnum: ")
@@ -185,6 +186,15 @@ pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write
 ##to significy the start of the experiment##
 ##let's make the LEDs all red initially##
 ##and then wait for a certain amount of time##
+# Render screen and fixation cross
+pygame.mouse.set_visible(0)
+disp_info = pygame.display.Info()
+screen = pygame.display.set_mode((disp_info.current_w, disp_info.current_h),pygame.FULLSCREEN)
+x_center = disp_info.current_w/2
+y_center = disp_info.current_h/2
+
+pygame.draw.line(screen, (255, 255, 255), (x_center-10, y_center), (x_center+10, y_center),4)
+pygame.draw.line(screen, (255, 255, 255), (x_center, y_center-10), (x_center, y_center+10),4)
 
 for block in range(block_num):
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
@@ -201,12 +211,12 @@ for block in range(block_num):
     trial_resp.append(0)
     jitter_length.append(0)
     resp_latency.append(0)
-    time.sleep(2) ## leave red on for 2 seconds 
+    time.sleep(2) ## leave red on for 2 seconds
     pixels.fill(blank)
-    GPIO.output(pi2trig(255),0) 
+    GPIO.output(pi2trig(255),0)
     time.sleep(2)
     for i_trial in range(len(trials)):
-        start_trial = time.time() + trig_gap # define start time of a given trial 
+        start_trial = time.time() + trig_gap # define start time of a given trial
         delay = ((randint(0,500)*0.001)+1.0) # define delay, to be used later
         delay_length.append(delay)
         ##determine the type of stimuli we will show on this trial##
@@ -240,7 +250,7 @@ for block in range(block_num):
 
     ##end of experiment##
     pixels.fill(red)
-    GPIO.output(pi2trig(11),1) # send unique trigger for the end of a block 
+    GPIO.output(pi2trig(11),1) # send unique trigger for the end of a block
     trig_time.append(time.time() - start_exp)
     block_start_stop.append(time.time() - start_exp) # end of each block from start_exp
     ## structure output of CSV
@@ -249,9 +259,9 @@ for block in range(block_num):
     trial_resp.append(0)
     jitter_length.append(0)
     resp_latency.append(0)
-    time.sleep(2) ## leave red on for 2 seconds 
+    time.sleep(2) ## leave red on for 2 seconds
     pixels.fill(blank)
-    GPIO.output(pi2trig(255),0) 
+    GPIO.output(pi2trig(255),0)
     time.sleep(2)
 
 exp_start_stop.append(time.time() - start_exp)
