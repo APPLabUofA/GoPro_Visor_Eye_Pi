@@ -1,8 +1,4 @@
-seaborn
-pandas
-spyder
-pandas
-matplotlib
-numpy
-
-# mne - must get from elsewhere - pip or git clone
+$ curl -O https://raw.githubusercontent.com/mne-tools/mne-python/master/environment.yml
+$ conda env create -f environment.yml
+$ conda activate mnet clone
+$ conda install seaborn
