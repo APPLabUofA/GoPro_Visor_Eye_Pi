@@ -18,16 +18,22 @@ A given trial consist of:
 
 
 ## Experiment 1
-Visor + button + EEG + MP4 Video File (Task 2)
+### Visor + button + EEG
 
 ### Task 1:  indoor, sitting down, fixation cross (otherwise blank screen)
 Visor blink, two conditions (1 w/o response, 1 w/ resp) * should get comparable P3 w/o
 
+pilot - 1000 trials 
+
+study - 500 trials each condition (1 w/o response, 1 w/ resp)  - ~12 participants 
+
 #### Jon_Blink.py
 
-### Task 2:  indoor, sitting down, fixation cross
+### Task 2:  indoor, sitting down, fixation cross  + MP4 Video File (Task 2)
 Visor blink, two conditions (1 w/o response, 1 w/ resp) * should get comparable P3 w/o
 Video in background either a busy scene or a park scene (w/o kids)
+Test 24-30 fps on the pi + viewpixx monitor
+Try custom build - Ask Kyle at this point - Custom build ($300-$400) vs. Premade (20,000-50,000)
 
 #### Scripts
 #### OpenCv_Pi_Visor.py
@@ -46,12 +52,14 @@ taking the ~250 fps video stream, reducing it to ~ 24 fps and embedding/drawing 
 Visor + button + EEG + MP4 Video File + Eye Tracking (Home made rig?)
 
 ### Task 1: Task 2 + eye tracking (w/ w/o fixation cross)
+Preliminary 1 - just eye tracking plus video
+Preliminary 2 - + EEG
+regression of eye movement + eye blink - based on eye tracking
 
-
-
+GoPro instead of ViewPixx (still indoors)
 ## Experiment 3
 Visor + button + EEG + MP4 Video File + Eye Tracking (Home made rig?) + Binocular external video stream (3D Mapping)
-
+Outside walking
 Depth Perception Test?
 
 ### Task 1: Walk/Bike down sask drive /across the river (in different contexts)
