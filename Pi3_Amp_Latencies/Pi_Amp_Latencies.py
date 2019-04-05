@@ -43,52 +43,34 @@ df2= df2.dropna(thresh=2)
 criteria_1 = df2['pi_type'] == 1 
 criteria_2 =  df2['pi_type'] == 2
 criteria_all = criteria_1 | criteria_2
-df2 = df1[criteria_all]
-
+df2 = df1[criteria_all] # Unalignable boolean Series provided as indexer (index of the boolean Series and of the indexed object do not match
+# deal with this with the following - df2 = df2.reset_index()
+# %% 
+df2 = df2.reset_index()
 # %%
 # Combine the two into a single dataframe ? Nah, not for now
 #all_onset_latencies = pd.concat([df1.assign(dataset='df1'), df2.assign(dataset='df2')])
-
+df3 = df1.join(df2)
+df3 = df3.reset_index()
+df3['Difference'] = df3['Latency_Time'] - df3['pi_onset_latency']
 #%%
 # Plotting 
 # Latency plot
-sns.set()
-df2 = sns.relplot(x='pi_onset_latency', y='index', data=pi_recorded_times.reset_index());
-df1.set(xlabel='Latency (Seconds)', ylabel='Trial Count')
-plt.show(fig)
 
-# pandas.DataFrame.plot
-df1 = df1.reset_index()
-df1.plot(kind='line', x='index', y='Latency_Time')
+# matlibplot 
+plt.plot(df3['pi_onset_latency'], df3['level_0'])
+plt.plot(df3['Latency_Time'], df3['level_0'])
+plt.legend('EEG' 'Pi', ncol=2, loc='upper left'); # Figure legend
+plt.xlabel('Latency (Seconds)')
+# plt.ylabel('Trial Count')
 plt.show()
-
-
-ax = sns.lineplot(data = df1.reset_index(), x = 'index', y="Latency_Time")
-plt.plot(,'Latency_Time', data=df1) # , marker='', color='olive', linewidth=2
-plt.plot('index','pi_onset_latency', data=df2) # , marker='', color='olive', linewidth=2
-# plt.set(xlabel='Latency (Seconds)', ylabel='Trial Count')
-# plt.legend()
-plt.show()
-
-
-
-
-sns.relplot(x_vars=['Latency_Time'], y_vars=['Index'], data=df1, hue='Asset Subclass')
-sns.relplot(x_vars=['pi_onset_latency'], y_vars=['Index'], data=df2, hue='Asset Subclass')
-plt.show()
-
-
-
-#import matplotlib
-#matplotlib.__version__
-
-
-
-
-## Add extra row to have all lines start from 0:
-#plot_table.loc['+0', :] = 0
-
 
 # Difference plot
+plt.plot(df3['Difference'], df3['index'])
+plt.legend('EEG - Pi', ncol=2, loc='upper left'); # Figure legend
+plt.xlabel('Latency (Seconds)')
+# plt.ylabel('Trial Count')
+plt.show()
 
-tips = sns.load_dataset("tips")
+
+

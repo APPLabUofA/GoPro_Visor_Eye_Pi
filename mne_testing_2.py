@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Feb 22 14:21:01 2019
-
-@author: User
-"""
 
 import mne
 import numpy as np
@@ -26,7 +21,8 @@ colours = ['black', 'red']
 conditions = ["Standards", "Targets"]
 
 #load our data#
-filename = 'M:\Data\GoPro_Visor\Pi_Amp_Latency_Test\testing_visor_pi_012.vhdr'
+filename = 'M:\Data\GoPro_Visor\Pi_Amp_Latency_Test\\testing_visor_pi_011.vhdr'
+filename = 'M:\Data\GoPro_P3_Latency\EEG_Data\\005_camera_p3.vhdr'
 raw = mne.io.read_raw_brainvision(filename)
 
 #specify montage, EOGs, and reference#
