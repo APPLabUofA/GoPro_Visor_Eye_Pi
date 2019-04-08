@@ -7,6 +7,8 @@ import time
 from random import randint, shuffle
 import numpy
 import pygame
+import cv2
+from threading import Thread
 
 ##setup some constant variables##
 partnum = input("partnum: ")
@@ -209,30 +211,42 @@ import time
 import rpi.GPIO as GPIO
 
 #time.sleep(trig_gap)
-#GPIO.output(pi2trig(15),1)
+#
 #GPIO.output(pi2trig(16),1)
 
-### Change video input
-cap = cv2.VideoCapture(0)
-while (True):
-    # Capture frame-by-frame
-    ret, frame = cap.read()  # ret = 1 if the video is captured; frame is the image
+class Stream (Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        self.file = 0### Change video input
+        self.times = [] # 2 array of time and frame state
+        self.state = 'time_off' # 0
+        self.state = 'frame_off' # 0
+    def run(self):
+        cap = cv2.VideoCapture(self.file)
+        while True:
+            # Capture frame-by-frame
+            ret, frame = cap.read()  # ret = 1 if the video is captured; frame is the image
+            # might need to put this thing outside and access state externally from self.state and switch within main body
+            if GPIO.output(pi2trig(15),1) & Stream.times[frame-2] == 1
+                GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
+            if count % 24 == 0:
 
-    if GPIO.input(pin) == GPIO.HIGH:
-        GPIO.output(pin, GPIO.LOW)
 
-# Also we can use time as opposed to frame or both and confirm that there is an internal drift we can account for it
+            if
 
-    if count % 24 == 0:
-        GPIO.output(pin, GPIO.HIGH)
+        # Also we can use time as opposed to frame or both and confirm that there is an internal drift we can account for it
 
-    count += 1
+                #### one of these two options, turn off directly
+                # GPIO.output(pin, GPIO.HIGH)
+                #
 
-    # Display the resulting image
-    cv2.imshow('Video', frame)
+            count += 1
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):  # press q to quit
-        break
+            # Display the resulting image
+            cv2.imshow('Video', frame)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):  # press q to quit
+                break
 
 # When everything done, release the capture
 cap.release()
@@ -242,6 +256,7 @@ cv2.destroyAllWindows()
 
 for block in range(block_num):
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
+    Stream.run
     pixels.fill(red)
     if block == 0:
         GPIO.output(pi2trig(12),1) # send unique trigger for the start of the experiment
