@@ -22,6 +22,10 @@ block_num = int(input("How many blocks?: "))
 standard_rate = 0.8
 target_rate = 0.2
 
+##intialize pygame
+pygame.init()
+pygame.display.init()
+
 ##several colours for the pixels##
 red = (255, 0, 0)
 green = (0, 255, 0)
@@ -186,6 +190,25 @@ pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write
 ##to significy the start of the experiment##
 ##let's make the LEDs all red initially##
 ##and then wait for a certain amount of time##
+
+##Render the screen and fixation cross##
+pygame.mouse.set_visible(0)
+disp_info = pygame.display.Info()
+##screen = pygame.display.set_mode((disp_info.current_w, disp_info.current_h),pygame.FULLSCREEN)
+##x _center = disp_info.current_w/2
+##y_center = disp_info.current_h/2
+screen = pygame.display.set_mode((200,100),pygame.RESIZABLE)
+x_center = 200/2
+y_center = 100/2
+
+
+
+
+
+
+
+pygame.draw.line(screen, (255, 255, 255), (x_center-10, y_center), (x_center+10, y_center),4)
+pygame.draw.line(screen, (255, 255, 255), (x_center, y_center-10), (x_center, y_center+10),4)
 
 for block in range(block_num):
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
