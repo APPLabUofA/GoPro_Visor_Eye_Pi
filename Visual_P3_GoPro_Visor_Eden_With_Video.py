@@ -57,25 +57,25 @@ GPIO.output(trig_pins,0)
 ###setup pin for push button###
 GPIO.setup(resp_pin,GPIO.IN,pull_up_down=GPIO.PUD_UP)
 
-def pi2trig(trig_num):
+def pi2trig(trig_num): # trig_num = integer # sphinx - auto documentation
 
-    pi_pins = [4,17,27,22,5,6,13,19]
+    pi_pins = [4,17,27,22,5,6,13,19] 
 
-    bin_num = list(reversed(bin(trig_num)[2:]))
+    bin_num = list(reversed(bin(trig_num)[2:])) # taking all but the first 2 (removes '0b') and reverses and lists (1s and 0s)
 
-    while len(bin_num) < len(pi_pins):
+    while len(bin_num) < len(pi_pins): # padding with 0s if shorter than 8 elements in the list
         bin_num.insert(len(bin_num)+1,str(0))
 
     trig_pins = []
 
     trig_pos = 0
 
-    for i_trig in range(len(pi_pins)):
+    for i_trig in range(len(pi_pins)): # binary needs to be reversed (right to left)
         if bin_num[i_trig] == '1':
             trig_pins.insert(trig_pos,pi_pins[i_trig])
             trig_pos = trig_pos + 1
 
-    return trig_pins
+    return trig_pins # outputs a list of pi_pins, that are to be called
 
 def resp_trig(trig): # maps response trigger to standard (3) or target (4)
     if trig == 1:
@@ -204,11 +204,6 @@ pygame.draw.line(screen, (255, 255, 255), (x_center, y_center-10), (x_center, y_
 ##### Will have to define a class that we update up (15) every 1 second & (16) 24 frames,
 # then outside of thread we will check both 15/16 each iteration (confirm this doesn't add more time)
 # does this mean another public thread?
-from Thread import threading # research this package
-import numpy as np
-import cv2
-import time
-import rpi.GPIO as GPIO
 
 #time.sleep(trig_gap)
 #
@@ -217,7 +212,7 @@ import rpi.GPIO as GPIO
 class Stream (Thread):
     def __init__(self):
         Thread.__init__(self)
-        self.file = 0### Change video input
+        self.file = 0 ### Change video input
         self.times = [] # 2 array of time and frame state
         self.state = 'time_off' # 0
         self.state = 'frame_off' # 0
