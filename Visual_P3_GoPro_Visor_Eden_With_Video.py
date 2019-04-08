@@ -182,6 +182,8 @@ jitter_length = []
 resp_latency = []
 block_start_stop = []
 exp_start_stop = []
+time_state = [] # array of time state
+time_frame = [] # array of frame state
 ##setup our neopixels##
 pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write = True)
 
@@ -189,6 +191,8 @@ pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write
 ##let's make the LEDs all red initially##
 ##and then wait for a certain amount of time##
 # Render screen and fixation cross
+
+#### Is this going to draw overtop of the cv2 presented video frames, will we have to redraw each frame? Add this into the cv2 stream
 pygame.mouse.set_visible(0)
 disp_info = pygame.display.Info()
 screen = pygame.display.set_mode((disp_info.current_w, disp_info.current_h),pygame.FULLSCREEN)
@@ -204,59 +208,137 @@ pygame.draw.line(screen, (255, 255, 255), (x_center, y_center-10), (x_center, y_
 ##### Will have to define a class that we update up (15) every 1 second & (16) 24 frames,
 # then outside of thread we will check both 15/16 each iteration (confirm this doesn't add more time)
 # does this mean another public thread?
-from Thread import threading # research this package
-import numpy as np
-import cv2
-import time
-import rpi.GPIO as GPIO
 
-#time.sleep(trig_gap)
-#
-#GPIO.output(pi2trig(16),1)
-
-class Stream (Thread):
+class Stream (Thread): # construct - not an object
     def __init__(self):
         Thread.__init__(self)
-        self.file = 0### Change video input
-        self.times = [] # 2 array of time and frame state
-        self.state = 'time_off' # 0
-        self.state = 'frame_off' # 0
+        self.frame = 0 # if I want to pass this attrivute I have to pass the entire class to the other object/class
+        self.time = 0
+        self.file = 0 ### Change video input - should be in string format
+        self.start_time = time.time() # time since the begining of the first frame
+        self.frame_time = 0 # time since the begining of the frame being draw
+        slef.
+        cap = cv2.VideoCapture(self.file)
+        self.length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.frame_rate = get(cv2.CAP_PROP_FPS)
+        self.frame_latency = 1/self.frame_rate
+        #self.state_time = 0 # 0 = time_off, 1 = time_on
+        #self.state_frame = 0 # 0 = frame_off, 1 = frame_on
+        self.Time_State_other = Frame_State(self) # Frame_State(self) --> passes the Stream class object to Frame_state & also makes the object class self.Frame_State_other avaialable to self.trig
+        self.Time_State_other.start() # loses thread if not initialized with passing self to the external class object
+        self.Frame_State_other = Time_State(self)
+        self.Frame_State_other.start()
+        self.trig = Trigger(self.Time_State_other, self.Frame_State_other)
+        self.trig.start()
+        self.pin = Pin(self.trig)
+        self.trig.start()
     def run(self):
         cap = cv2.VideoCapture(self.file)
         while True:
             # Capture frame-by-frame
             ret, frame = cap.read()  # ret = 1 if the video is captured; frame is the image
             # might need to put this thing outside and access state externally from self.state and switch within main body
-            if GPIO.output(pi2trig(15),1) & Stream.times[frame-2] == 1
-                GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
-            if count % 24 == 0:
-
-
-            if
-
         # Also we can use time as opposed to frame or both and confirm that there is an internal drift we can account for it
-
-                #### one of these two options, turn off directly
-                # GPIO.output(pin, GPIO.HIGH)
-                #
-
-            count += 1
+            self.frame += 1 # counts frame number
+            # self.frame_time = time.time() # gets the start time of each frame
+            self.time = time.time() - self.start_time # gets the time of a given frame from the begining of the first frame
+            # self.frame_difference = self.time[frame] - self.time[frame-1] # gets the difference between the x and x-1 frames
 
             # Display the resulting image
             cv2.imshow('Video', frame)
-
             if cv2.waitKey(1) & 0xFF == ord('q'):  # press q to quit
                 break
+        # When everything done, release the capture
+        cap.release()
+        cv2.destroyAllWindows()
 
-# When everything done, release the capture
-cap.release()
-cv2.destroyAllWindows()
+# In this thread # check the state of Thread.state_time and Thread.state_frame # refresh every 1 ms? As a thread
 
-#############################################################
+class Frame_State (Thread):
+    def __init__(self, Stream_other):
+        Thread.__init__(self)
+        self.Stream_other = Stream_other # this is a pointer, have to recall it in the run!
+        self.frame = 0
+        self.length = Stream_other.length
+    def run(self):
+        self.frame = self.Stream_other.frame
+        if self.frame % 24 == 0:
+            self.state = 1
+            time.sleep(0.002)
+            self.state = 0
+        else:
+            time.sleep(0.001)
+
+class Time_State (Thread):
+    def __init__(self, Stream_other):
+        Thread.__init__(self)
+        self.Stream_other = Stream_other
+        slef.time = 0
+        self.state = 0
+    def run(self):
+        while True:
+        self.time = self.Stream_other.time
+        if self.time  % 1 == 0: # if self.time is rounded to the nearest 1000 and divided by 1000 & == 0 then....blah, blah
+            self.state = 1
+            time.sleep(0.04)
+            self.state = 0
+        else:
+            time.sleep(0.001)
+
+
+        return
+
+class Trigger (Thread):
+    def __init__(self, Time_State_other, Frame_State_other): # pulls both time and state into itself as per being defined in the initial state machine
+        Thread.__init__(self)
+        self.Frame_State_other = Frame_State_other
+        self.Time_State_other = Time_State_other
+        self.latency = self.Frame_State_other.frame_latency
+        self.change = 0
+        self.latency = 0
+    def run(self): ### turn on both configurations (x = time_state, y = frame_state), such that each (x and y) is a subset of z
+        self.length = self.Frame_State_other.length
+        for frame in length(range(self.length))
+            # self.latency = self.Frame_State_other.frame_latency # not working?
+            if Stream.state_time == 0: # state_time off
+                time_state[self.Frame_State_other.frame] = 0
+            else:
+                GPIO.output(pi2trig(15),1)
+                time_state[self.Frame_State_other.frame] = 1 # state_time off
+                self.change == 1
+
+            if self.Frame_State_other.frame == 0: # state_frame off
+                frame_state[self.Frame_State_other.frame] = 0
+            else:
+                if self.change == 0:
+                    GPIO.output(pi2trig(16),1)
+                    frame_state[self.Frame_State_other.frame] = 1 # state_frame on
+                    self.change == 1
+                else:
+                    GPIO.output(pi2trig(17),1)
+                    frame_state[self.Frame_State_other.frame] = 1 # both state_frame && time_frame on
+            time.sleep(self.latency)
+            self.change = 0
+
+        return time_state, frame_state
+
+class Pin (Thread):
+    def __init__(self, trig_other):
+        Thread.__init__(self)
+        self.trig_other = trig_other
+    def run(self)
+#        self.trig_other = trig_other
+        if self.trig_other.change == 1:
+            self.trig_other.change = 0
+            time.sleep(trig_gap)
+            GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
+        else:
+            time.sleep(self.trig_other.latency)
+
 
 for block in range(block_num):
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
-    Stream.run
+    Stream.run # initalize the video stream - on the viewpixx
     pixels.fill(red)
     if block == 0:
         GPIO.output(pi2trig(12),1) # send unique trigger for the start of the experiment
