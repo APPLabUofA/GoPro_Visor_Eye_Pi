@@ -89,6 +89,16 @@ def resp_trig(trig): # maps response trigger to standard (3) or target (4)
     GPIO.output(pi2trig(255),0)
     time.sleep(trig_gap)
 
+class Varaible_Overlap (Thread): ## this is designed to avoid having a ten millisecond varaible gap wherein response can not be gotten
+    def __init__(self):
+        Thread.__init__(self)
+        self.state = 0
+    def run():
+        self.state = resp_state
+        if self.state = 1
+            resp_trig(trig)
+        else:
+            time.sleep(0.001)
 
 def get_resp_led_off(pin, led_on_time,trig): # get response (if occured in first 1 second) + turn off the LEDs regardless
     start_resp = time.time()
@@ -98,10 +108,15 @@ def get_resp_led_off(pin, led_on_time,trig): # get response (if occured in first
     button_down = time.time() - start_resp # this is response time from the start of the 1 second response window
 
     if button_down < led_on_time: ## right now this isn't making any sense to me
-        resp_trig(trig)
         resp_time = button_down
         if button_down <= 0.990:
-            time.sleep(led_on_time - (button_down + trig_gap*2)) # wait until the end of the 1 second of the light being on
+            resp_trig(trig)
+            time.sleep(led_on_time - (button_down + trig_gap)) # wait until the end of the 1 second of the light being on
+        else:
+            overlap_resp = led_on_time - button_down
+            resp_state = 1
+            time.sleep(overlap_resp)
+
     else:
         resp_time = 0
 
@@ -115,12 +130,12 @@ def get_resp_led_off(pin, led_on_time,trig): # get response (if occured in first
     time.sleep(trig_gap)
     GPIO.output(pi2trig(255),0)
 
-    return resp_time # before_second_light, after_second_light
+    return resp_time
 
-def get_resp(pin, wait_time, prev_delay, resp, trig): # get response (if not in the first second) + wait for wait time (delay)
+def get_resp(pin, wait_time, prev_delay, resp, trig): # get response (if not in the first second) + wait for wait time if left (delay)
     start_resp = time.time()
 
-    GPIO.wait_for_edge(pin,GPIO.RISING, timeout = int(wait_time * 1000))
+    GPIO.wait_for_edge(pin,GPIO.RISING, timeout = int(wait_time * 990))
 
     delay_end_time = time.time() - start_resp
 
@@ -167,6 +182,31 @@ def rainbow_cycle(wait, rainbow_time):
                 pixels[i] = wheel(pixel_index & 255)
             pixels.show()
             time.sleep(wait)
+def inital_instruct():
+    pygame.draw.line(screen, (255, 255, 255), (x_center-10, y_center), (x_center+10, y_center),4)
+    pygame.draw.line(screen, (255, 255, 255), (x_center, y_center-10), (x_center, y_center+10),4)
+    screen.blit(instructions1,(x_center-((instructions1.get_rect().width)/2),y_center+((instructions1.get_rect().height)*1)+10))
+    screen.blit(instructions2,(x_center-((instructions2.get_rect().width)/2),y_center+((instructions2.get_rect().height)*2)+10))
+    screen.blit(instructions3,(x_center-((instructions3.get_rect().width)/2),y_center+((instructions3.get_rect().height)*3)+10))
+    pygame.display.flip()
+
+def black_instructions():
+    screen.fill(pygame.Color("black"))
+    pygame.draw.line(screen, (255, 255, 255), (x_center-10, y_center), (x_center+10, y_center),4)
+    pygame.draw.line(screen, (255, 255, 255), (x_center, y_center-10), (x_center, y_center+10),4)
+    pygame.display.flip()
+    time.sleep(1)
+
+def refresh(): # called at the start and end of each block - add place holders for output csv. and resets triggers + visor leds
+    trig_type.append(3)
+    delay_length.append(2)
+    trial_resp.append(0)
+    jitter_length.append(0)
+    resp_latency.append(0)
+    time.sleep(2) ## leave red on for 2 seconds
+    pixels.fill(blank)
+    GPIO.output(pi2trig(255),0)
+    time.sleep(2)
 
 ##define the ip address for the second Pi we will be controlling##
 ##pi = pigpio.pi('192.168.1.216')
@@ -201,17 +241,25 @@ screen = pygame.display.set_mode((200,100),pygame.RESIZABLE)
 x_center = 200/2
 y_center = 100/2
 
+###setup our instruction screens###
+pygame.font.init()
+myfont = pygame.font.SysFont('Times New Roman', 20)
+instructions1 = myfont.render('Focus on central fixation.', True, white)
+instructions2 = myfont.render('Press the button when you see blue flashes, do NOT press the spacebar when you see green flashes.', True, white)
+instructions3 = myfont.render('Press the button when you are ready to start.', True, white)
+break_screen = myfont.render('Feel free to take a break at this time. Press the button when you are ready to start.', True, white)
+end_screen = myfont.render('Congratulations, you have finished the experiment! Please contact the experimenter.', True, white)
 
+###show our instructions, and wait for a response###
 
-
-
-
-
-pygame.draw.line(screen, (255, 255, 255), (x_center-10, y_center), (x_center+10, y_center),4)
-pygame.draw.line(screen, (255, 255, 255), (x_center, y_center-10), (x_center, y_center+10),4)
-
+##Start Experiment##
 for block in range(block_num):
+    if block == 0:
+        inital_instruct()
+    else:
+        screen.blit(break_screen,(x_center-((break_screen.get_rect().width)/2),y_center+10))
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
+    black_instructions()
     pixels.fill(red)
     GPIO.output(pi2trig(10),1) # send unique trigger for the start of the block
     if block == 0:
@@ -220,15 +268,7 @@ for block in range(block_num):
     trig_time.append(time.time() - start_exp)
     block_start_stop.append(time.time() - start_exp) # start of each block from start_exp
     ## structure output of CSV
-    trig_type.append(3)
-    delay_length.append(2)
-    trial_resp.append(0)
-    jitter_length.append(0)
-    resp_latency.append(0)
-    time.sleep(2) ## leave red on for 2 seconds
-    pixels.fill(blank)
-    GPIO.output(pi2trig(255),0)
-    time.sleep(2)
+    refresh()
     for i_trial in range(len(trials)):
         start_trial = time.time() + trig_gap # define start time of a given trial
         delay = ((randint(0,500)*0.001)+1.0) # define delay, to be used later
@@ -248,12 +288,12 @@ for block in range(block_num):
         time.sleep(trig_gap)
 
         GPIO.output(pi2trig(255),0)
-        resp_time = get_resp_led_off(resp_pin, 1.0,trig) # before_second_light, after_second_light
-        resp_time = get_resp(resp_pin, delay, 1.0, resp_time,trig)
+        resp_time = get_resp_led_off(resp_pin, 1.0,trig) # response + turning off the LED after the first second
+        resp_time = get_resp(resp_pin, delay, 1.0, resp_time,trig) # repsonse in the second second
         resp_latency.append(time.time() - start_exp)
         trial_resp.append(resp_time)
 
-        GPIO.output(pi2trig(255),0) ## doesn't give us a trigger
+        GPIO.output(pi2trig(255),0)
         time.sleep(trig_gap)
         end_trial = time.time()
 
@@ -267,32 +307,19 @@ for block in range(block_num):
     GPIO.output(pi2trig(11),1) # send unique trigger for the end of a block
     trig_time.append(time.time() - start_exp)
     block_start_stop.append(time.time() - start_exp) # end of each block from start_exp
-    ## structure output of CSV
-    trig_type.append(4)
-    delay_length.append(2)
-    trial_resp.append(0)
-    jitter_length.append(0)
-    resp_latency.append(0)
-    time.sleep(2) ## leave red on for 2 seconds
-    pixels.fill(blank)
-    GPIO.output(pi2trig(255),0)
-    time.sleep(2)
+    refresh()
 
 exp_start_stop.append(time.time() - start_exp)
-rainbow_cycle(0.001, 5) ## After all blocks flash a rainbow at a refresh of (1st arguement) ms for (2nd arguement) seconds
-
+screen.blit(end_screen,(x_center-((end_screen.get_rect().width)/2),y_center+10))
+rainbow_cycle(0.001, 8) ## After all blocks flash a rainbow at a refresh of (1st arguement) ms for (2nd arguement) seconds
 pixels.fill(blank)
+black_instructions()
 
 ###save trial information###
 filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/Pi3_Amp_Latencies/Pi_Time_Data/" + partnum + "_" + filename + ".csv")
 
-# What is each thing
-# trig_type
-# trig_time
-# delay_length
-# trial_resp
-# jitter_length
-# resp_latency
-# start_stop
+pygame.display.quit()
+pygame.quit()
+GPIO.cleanup()
 
 numpy.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, jitter_length, resp_latency, block_start_stop, exp_start_stop), delimiter=',',fmt="%s")
