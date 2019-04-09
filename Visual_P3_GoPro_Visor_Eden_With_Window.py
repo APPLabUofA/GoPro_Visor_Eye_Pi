@@ -246,9 +246,16 @@ disp_info = pygame.display.Info()
 ##screen = pygame.display.set_mode((disp_info.current_w, disp_info.current_h),pygame.FULLSCREEN)
 ##x _center = disp_info.current_w/2
 ##y_center = disp_info.current_h/2
+
+##DEBUGGIN WINDOW
 screen = pygame.display.set_mode((200,100),pygame.RESIZABLE)
-x_center = 600/2
-y_center = 300/2
+w = 100
+y = 5*w
+x = y*2
+pygame.mouse.set_visible(0)
+screen = pygame.display.set_mode((x,y),pygame.RESIZABLE)
+x_center = x/2
+y_center = y/2  
 
 ###setup our instruction screens###
 pygame.font.init()
@@ -259,6 +266,12 @@ instructions3 = myfont.render('Press the button when you are ready to start.', T
 break_screen = myfont.render('Feel free to take a break at this time. Press the button when you are ready to start.', True, white)
 end_screen = myfont.render('Congratulations, you have finished the experiment! Please contact the experimenter.', True, white)
 print("debug 3")
+
+
+##Encase in a while loop that if esc or q keys are pressed then it quits the
+##experiment - resets all pins, blanks the visor, closes the pygame window
+## be sure to include the final rainbow cycling in this
+
 ##Start Experiment##
 for block in range(block_num):
     ###show our instructions, and wait for a response###
