@@ -3,7 +3,10 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np 
+from sklearn.linear_model import LinearRegression
 import mne
+
+plt.close('all')
 
 trials = 250;
 blocks = 1;
@@ -21,9 +24,9 @@ df1 = mne.find_events(raw) # outputs a numpy.ndarray
 df1 = np.insert(df1,0,[0],axis = 0) #shift data one row down from the top so we don't miss the first event on o
 df1 = pd.DataFrame(data=df1[1:,1:], index=df1[1:,0], columns=df1[0,1:])   # change to a pandas DataFrame
 df1 = df1.reset_index() 
-df1.columns = ['Latency_Time', 'Empty', 'Event_Type'] # name columns
+df1.columns = ['eeg_times', 'Empty', 'Event_Type'] # name columns
 df1 = df1.drop(columns='Empty') # get rid of empty column
-df1['Latency_Time'] = (df1['Latency_Time'] - df1['Latency_Time'][0]) * 0.001 # subtract all from start trigger
+df1['eeg_times'] = (df1['eeg_times'] - df1['eeg_times'][0]) * 0.001 # subtract all from start trigger
 
 criteria_1 = df1['Event_Type'] == 1 
 criteria_2 =  df1['Event_Type'] == 2
@@ -50,27 +53,46 @@ df2 = df2.reset_index()
 # %%
 # Combine the two into a single dataframe ? Nah, not for now
 #all_onset_latencies = pd.concat([df1.assign(dataset='df1'), df2.assign(dataset='df2')])
-df3 = df1.join(df2)
+df3 = df1.join(df2) # join eeg_times to pi_times
 df3 = df3.reset_index()
-df3['Difference'] = df3['Latency_Time'] - df3['pi_onset_latency']
+df3['Difference'] = df3['eeg_times'] - df3['pi_onset_latency']
 #%%
 # Plotting 
 # Latency plot
 
 # matlibplot 
 plt.plot(df3['pi_onset_latency'], df3['level_0'])
-plt.plot(df3['Latency_Time'], df3['level_0'])
-plt.legend('EEG' 'Pi', ncol=2, loc='upper left'); # Figure legend
+plt.plot(df3['eeg_times'], df3['level_0'])
+plt.legend('EP', ncol=2, loc='upper left'); # Figure legend
 plt.xlabel('Latency (Seconds)')
 # plt.ylabel('Trial Count')
 plt.show()
 
 # Difference plot
-plt.plot(df3['Difference'], df3['index'])
+plt.plot(df3['Difference'], df3['level_0'])
 plt.legend('EEG - Pi', ncol=2, loc='upper left'); # Figure legend
 plt.xlabel('Latency (Seconds)')
 # plt.ylabel('Trial Count')
 plt.show()
+
+df4 = df3.copy() # convert from Pandas DataFrame to a numpy structure
+df4.info()
+## LinearRegression().fit(X, y) X=Training data (eeg_times), y=Target Values (pi_onset_latency)
+reg =  LinearRegression().fit(df3[:,5], df3[:,1])
+ss = df3[:,1]
+#reg.score(X, y)
+#reg.coef_
+#reg.intercept_ 
+#reg.predict(np.array([[3, 5]]))
+
+
+# %% ## Transformed Difference plot
+plt.plot(df3['Difference'], df3['level_0'])
+plt.legend('EEG - Pi', ncol=2, loc='upper left'); # Figure legend
+plt.xlabel('Latency (Seconds)')
+# plt.ylabel('Trial Count')
+plt.show()
+
 
 
 

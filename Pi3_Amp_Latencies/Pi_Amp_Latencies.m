@@ -81,7 +81,7 @@ plot(all_latencies(1,:)-all_latencies(2,:),[1:trials],'color',colours(i_plot));
 
 %%% GoPro linear regression 
 %%%mdl = LinearModel.fit(all_latencies(2,:),all_latencies(1,:),'linear'); %%% confirm what's a happen!
-mdl = fitlm(all_latencies(2,:),all_latencies(1,:),'linear'); %%% confirm what's a happen!
+mdl = fitlm(all_latencies(2,:),all_latencies(1,:),'linear'); %%% confirm what's a happen! - transforming the pi times to the eeg times
 
 xlabel('Time (Seconds)');ylabel('Trial');legend('EEG - Pi Times');
 hold off;
