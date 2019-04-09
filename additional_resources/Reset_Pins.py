@@ -41,26 +41,6 @@ GPIO.output(trig_pins,0)
 ###setup pin for push button###
 GPIO.setup(resp_pin,GPIO.IN,pull_up_down=GPIO.PUD_UP)
 
-def pi2trig(trig_num):
-
-    pi_pins = [4,17,27,22,5,6,13,19]
-
-    bin_num = list(reversed(bin(trig_num)[2:]))
-
-    while len(bin_num) < len(pi_pins):
-        bin_num.insert(len(bin_num)+1,str(0))
-
-    trig_pins = []
-
-    trig_pos = 0
-
-    for i_trig in range(len(pi_pins)):
-        if bin_num[i_trig] == '1':
-            trig_pins.insert(trig_pos,pi_pins[i_trig])
-            trig_pos = trig_pos + 1
-
-    return trig_pins
-
 ##setup our neopixels##
 pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write = True)
 

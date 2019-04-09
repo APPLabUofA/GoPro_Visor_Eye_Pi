@@ -60,7 +60,6 @@ GPIO.output(trig_pins,0)
 
 ###setup pin for push button###
 GPIO.setup(resp_pin,GPIO.IN,pull_up_down=GPIO.PUD_UP)
-print("debug 1")
 
 def pi2trig(trig_num):
 
@@ -129,10 +128,13 @@ def get_resp_led_off(pin, led_on_time,trig): # get response (if occured in first
 ##            resp_state = 1
 ##            time.sleep(overlap_resp)
 
+    else:
+        resp_time = 0
+
     # before_second_light = time.time() - start_exp
-    
     pixels.fill(blank)
-    if trig == 1:
+    # after_second_light = time.time() - start_resp
+    if trig == 1: ## Maps out offset trigger to standard and target flashes
         GPIO.output(pi2trig(5),1)
     else:
         GPIO.output(pi2trig(6),1)
@@ -207,12 +209,7 @@ def black_instructions():
     pygame.display.flip()
     time.sleep(1)
 
-def refresh(): # called at the start and end of each block - add place holders for output csv. and resets triggers + visor LEDs
-    trig_type.append(3)
-    delay_length.append(2)
-    trial_resp.append(0)
-    jitter_length.append(0)
-    resp_latency.append(0)
+def refresh(): # called at the start and end of each block - resets triggers + visor LEDs
     time.sleep(2) ## leave red on for 2 seconds
     pixels.fill(blank)
     GPIO.output(pi2trig(255),0)
@@ -220,21 +217,12 @@ def refresh(): # called at the start and end of each block - add place holders f
 
 ##define the ip address for the second Pi we will be controlling##
 ##pi = pigpio.pi('192.168.1.216')
-print("debug 2")
 
 ##distribution of targets and standards##
 trials = numpy.zeros(int(trial_num*standard_rate)).tolist() + numpy.ones(int(trial_num*target_rate)).tolist()
 shuffle(trials) # randomize order of standards and targets
 
 ##variables to save trial information##
-trig_time   = []
-trig_type = []
-delay_length  = []
-trial_resp = []
-jitter_length = []
-resp_latency = []
-block_start_stop = []
-exp_start_stop = []
 
 ##setup our neopixels##
 pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write = True)
@@ -243,6 +231,7 @@ pixels.fill(blank) # reset to make sure all LEDs are blank
 ##Render the screen and fixation cross##
 pygame.mouse.set_visible(0)
 disp_info = pygame.display.Info()
+
 ##screen = pygame.display.set_mode((disp_info.current_w, disp_info.current_h),pygame.FULLSCREEN)
 ##x _center = disp_info.current_w/2
 ##y_center = disp_info.current_h/2
@@ -258,14 +247,13 @@ instructions2 = myfont.render('Press the button when you see blue flashes, do NO
 instructions3 = myfont.render('Press the button when you are ready to start.', True, white)
 break_screen = myfont.render('Feel free to take a break at this time. Press the button when you are ready to start.', True, white)
 end_screen = myfont.render('Congratulations, you have finished the experiment! Please contact the experimenter.', True, white)
-print("debug 3")
+
 ##Start Experiment##
 for block in range(block_num):
     ###show our instructions, and wait for a response###
     
     if block == 0:
         inital_instruct()
-        print("debug 4")
     else:
         screen.blit(break_screen,(x_center-((break_screen.get_rect().width)/2),y_center+10))
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
@@ -274,56 +262,34 @@ for block in range(block_num):
     ##let's make the LEDs all red initially and then wait for a certain amount of time##
     pixels.fill(red)
     GPIO.output(pi2trig(10),1) # send unique trigger for the start of the block
-    
-    if block == 0:
-        start_exp = time.time()
-        exp_start_stop.append(0)
-    trig_time.append(time.time() - start_exp)
-    block_start_stop.append(time.time() - start_exp) # start of each block from start_exp
-    refresh()
+        refresh()
     
     for i_trial in range(len(trials)):
         start_trial = time.time() + trig_gap # define start time of a given trial
         delay = ((randint(0,500)*0.001)+1.0) # define delay, to be used later
-        delay_length.append(delay)
         ##determine the type of stimuli we will show on this trial##
-        
         if trials[i_trial] == 0: #standards
             trig = 1
             pixels.fill(green)
         elif trials[i_trial] == 1: #targets
             trig = 2
             pixels.fill(blue)
-            
         GPIO.output(pi2trig(trig),1) ## Specify which trigger to send Standard vs Target
-        trig_type.append(trig)
-        trig_time.append(time.time() - start_exp)
         time.sleep(trig_gap)
 
         GPIO.output(pi2trig(255),0)
         resp_time = get_resp_led_off(resp_pin, 1.0,trig) # response + turning off the LED after the first second
         resp_time = get_resp(resp_pin, delay, 1.0, resp_time,trig) # repsonse in the second second
-        resp_latency.append(time.time() - start_exp)
-        trial_resp.append(resp_time)
 
         GPIO.output(pi2trig(255),0)
         time.sleep(trig_gap)
-        end_trial = time.time()
-
-        actual_trial_length = end_trial - start_trial
-        theoretical_trial_length = delay + 1.0
-        jitter = actual_trial_length - theoretical_trial_length
-        jitter_length.append(jitter)
 
     ##end of block##
     pixels.fill(red)
     GPIO.output(pi2trig(11),1) # send unique trigger for the end of a block
-    trig_time.append(time.time() - start_exp)
-    block_start_stop.append(time.time() - start_exp) # end of each block from start_exp
     refresh()
 
 ##end of experiment##
-exp_start_stop.append(time.time() - start_exp)
 screen.blit(end_screen,(x_center-((end_screen.get_rect().width)/2),y_center+10))
 rainbow_cycle(0.001, 8) ## After all blocks flash a rainbow at a refresh of (1st arguement) ms for (2nd arguement) seconds
 pixels.fill(blank)
@@ -335,5 +301,3 @@ filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/Pi3_Amp_Latencies/Pi_Time_D
 pygame.display.quit()
 pygame.quit()
 GPIO.cleanup()
-
-numpy.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, jitter_length, resp_latency, block_start_stop, exp_start_stop), delimiter=',',fmt="%s")
