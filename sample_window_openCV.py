@@ -7,6 +7,7 @@ import time
 #import numpy
 #import pygame
 #from threading import Thread
+import psychopy
 from psychopy import visual, core, event
 
 #intialize colourspace

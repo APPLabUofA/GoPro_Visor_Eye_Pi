@@ -1,0 +1,5 @@
+Neopixel is incompatible with pygame, due to conflicting control of the BCM chip, which is responsible for the control of GPIO pins
+
+newer versions of psychopy are not compatible with with the pi (only releases from 2015 are working)
+
+There is some market space for a openCV overlay (API) for experimentation on the PI, worth developing a simple library in conjunction with pi 3B+/eeg schematics
