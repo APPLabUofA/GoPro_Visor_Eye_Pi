@@ -59,7 +59,7 @@ GPIO.setup(resp_pin,GPIO.IN,pull_up_down=GPIO.PUD_UP)
 
 def pi2trig(trig_num): # trig_num = integer # sphinx - auto documentation
 
-    pi_pins = [4,17,27,22,5,6,13,19] 
+    pi_pins = [4,17,27,22,5,6,13,19]
 
     bin_num = list(reversed(bin(trig_num)[2:])) # taking all but the first 2 (removes '0b') and reverses and lists (1s and 0s)
 
@@ -182,8 +182,8 @@ jitter_length = []
 resp_latency = []
 block_start_stop = []
 exp_start_stop = []
-time_state = [] # array of time state
-time_frame = [] # array of frame state
+frame_state = [] # array of frame state
+frame_time
 ##setup our neopixels##
 pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write = True)
 
@@ -191,17 +191,6 @@ pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write
 ##let's make the LEDs all red initially##
 ##and then wait for a certain amount of time##
 # Render screen and fixation cross
-
-#### Is this going to draw overtop of the cv2 presented video frames, will we have to redraw each frame? Add this into the cv2 stream
-pygame.mouse.set_visible(0)
-disp_info = pygame.display.Info()
-screen = pygame.display.set_mode((disp_info.current_w, disp_info.current_h),pygame.FULLSCREEN)
-x_center = disp_info.current_w/2
-y_center = disp_info.current_h/2
-
-pygame.draw.line(screen, (255, 255, 255), (x_center-10, y_center), (x_center+10, y_center),4)
-pygame.draw.line(screen, (255, 255, 255), (x_center, y_center-10), (x_center, y_center+10),4)
-
 
 ############################################################## The following is for an integrated Video display
 ##### Seperate Thread
@@ -222,172 +211,76 @@ class Stream (Thread): # construct - not an object
         self.time = 0
         self.file = 0 ### Change video input - should be in string format
         self.start_time = time.time() # time since the begining of the first frame
-        self.frame_time = 0 # time since the begining of the frame being draw
-        
+        self.frame_time = 0 # time since the begining of the current frame being draw
+
         cap = cv2.VideoCapture(self.file)
-        self.length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.frame_rate = get(cv2.CAP_PROP_FPS) # can enforce the frame rate - using EndFrameFlag
-        #self.frame_rate = 24
-        
+        self.frame_rate = get(cv2.CAP_PROP_FPS)
+        #self.frame_rate = 24  # can enforce the frame rate - using EndFrameFlag
+
         self.frame_latency = 1/self.frame_rate # duration of a single frame
         self.frame_update_time = 0.01
         self.frame_update = 0
-        
-        self.Time_State_other = Frame_State(self) # Frame_State(self) --> passes the Stream class object to Frame_state & also makes the object class self.Frame_State_other avaialable to self.trig
-        self.Time_State_other.start() # loses thread if not initialized with passing self to the external class object
-        self.Frame_State_other = Time_State(self)
-        self.Frame_State_other.start()
-        self.trig = Trigger(self.Time_State_other, self.Frame_State_other, self)
+
+        self.trig = Frame_Trigger(self)
         self.trig.start()
-        self.pin = Pin(self)
+        self.pin = Pin_Off(self, self.trig)
         self.pin.start()
-        self.time = time.time()
+
     def run(self):
         cap = cv2.VideoCapture(self.file)
+        self.start_time = time.time()
         while True:
             timer = Timer(self.frame_latency, lambda: raise EndFrameFlag) # start time that will wait one frame duration - then throws error
             timer.start()
-        
+
             try:
                 # Capture frame-by-frame
                 ret, frame = cap.read()  # ret = 1 if the video is captured; frame is the image
-                # might need to put this thing outside and access state externally from self.state and switch within main body
-            # Also we can use time as opposed to frame or both and confirm that there is an internal drift we can account for it
-                self.frame += 1 # counts frame number
-                # self.frame_time = time.time() # gets the start time of each frame
                 self.time = time.time() - self.start_time # gets the time of a given frame from the begining of the first frame
-                # self.frame_difference = self.time[frame] - self.time[frame-1] # gets the difference between the x and x-1 frames
-
                 # Display the resulting image
                 cv2.imshow('Video', frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):  # press q to quit
                     break
                 # immediately after the frame is drawn then a second timer is started to flash the frame_update for 10 ms
-                frame_timer = Timer(self.frame_update_time, lambda: raise EndFrameUpdateFlag) 
+                frame_timer = Timer(self.frame_update_time, lambda: raise EndFrameUpdateFlag)
                 frame_timer.start()
 
                 try:
+                    self.frame += 1 # counts frame number
                     self.frame_update = 1
                     time.sleep(1)
                 except EndFrameUpdateFlag: # allows EndFrameUpdateFlag to pass
                     pass
+
                 frame_update = 0
                 time.sleep(1)
             except EndFrameFlag: # allows EndFrameFlag to pass
                 pass
-            
+
         # When everything done, release the capture
         cap.release()
         cv2.destroyAllWindows()
 
-class Frame_State (Thread):
-    def __init__(self, Stream_other):
+class Frame_Trigger (Thread):
+    def __init__(self, Stream_other): # pulls both time and state into itself as per being defined in the initial state machine
         Thread.__init__(self)
-        self.Stream_other = Stream_other # this is a pointer, have to recall it in the run!
-        self.frame = 0
-        self.length = Stream_other.length
-        self.latency = 0
+        self.Stream_other = Stream_other
+        self.frame_rate = Stream_other.frame_rate
     def run(self):
-        while True:
+        While True:
             self.frame = self.Stream_other.frame
-            if self.frame % 24 == 0:   # replace frame rate with Stream attribute
-                self.state = 1
-                time.sleep(0.01) # if it catches a frame update it stops for 10 ms, then resets the state = 0
-                self.state = 0
+            self.time = Stream_other.time
+            if self.frame % self.frame_rate  == 0: # state_frame off
+                frame_state[self.Frame_State_other.frame] = 0
             else:
-                time.sleep(0.001) # checks every 1 ms, if it doesn't catch an update
+                GPIO.output(pi2trig(16),1)
+                frame_state[self.Frame_State_other.frame] = 1 # state_frame on
+                frame_time.append(self.time)
+                time.sleep(trig_gap)
+            time.sleep(0.001)
+        return frame_state
 
-class Time_State (Thread):
-    def __init__(self, Stream_other):
-        Thread.__init__(self)
-        self.Stream_other = Stream_other
-        self.time = 0
-        self.state = 0
-    def run(self):
-        while True:
-            self.time = self.Stream_other.time
-            if self.time  % 1 <= 0.0: # if self.time is rounded to the nearest 1000 and divided by 1000 & == 0 then....blah, blah
-                self.state = 1
-                time.sleep(0.01) # if it catches a time update it stops for 10 ms, then resets the state = 0
-                self.state = 0
-            else:
-                time.sleep(0.001) # checks every 1 ms, if it doesn't catch an update
-        return
-
-class Trigger (Thread):
-    def __init__(self, Time_State_other, Frame_State_other, Stream_other): # pulls both time and state into itself as per being defined in the initial state machine
-        Thread.__init__(self)
-        self.Frame_State_other = Frame_State_other
-        self.Time_State_other = Time_State_other
-        self.Stream_other = Stream_other
-        self.latency = self.Frame_State_other.frame_latency
-        self.change = 0
-        self.latency = 0
-    def run(self): ### turn on both configurations (x = time_state, y = frame_state), such that each (x and y) is a subset of z
-        While True:
-##            self.length = self.Frame_State_other.length
-##            for frame in length(range(self.Stream_other.length))
-##            self.latency = self.Frame_State_other.frame_latency # not working?
-            if self.Stream_other.frame_update == 1:
-                if Stream.state_time == 0: # state_time off
-                    time_state[self.Frame_State_other.frame] = 0
-                else:
-                    GPIO.output(pi2trig(15),1)
-                    time_state[self.Frame_State_other.frame] = 1 # state_time off
-
-                if self.Frame_State_other.frame == 0: # state_frame off
-                    frame_state[self.Frame_State_other.frame] = 0
-                else:
-                    if self.change == 0:
-                        GPIO.output(pi2trig(16),1)
-                        frame_state[self.Frame_State_other.frame] = 1 # state_frame on
-                    else:
-                        GPIO.output(pi2trig(17),1)
-                        frame_state[self.Frame_State_other.frame] = 1 # both state_frame && time_frame on
-                time.sleep(0.01)
-            else:
-                time.sleep(0.001)
-
-        return time_state, frame_state
-
-class Trigger (Thread):
-    def __init__(self, Time_State_other, Frame_State_other, Stream_other): # pulls both time and state into itself as per being defined in the initial state machine
-        Thread.__init__(self)
-        self.Frame_State_other = Frame_State_other
-        self.Time_State_other = Time_State_other
-        self.Stream_other = Stream_other
-        self.latency = self.Frame_State_other.frame_latency
-        self.change = 0
-        self.latency = 0
-    def run(self): ### turn on both configurations (x = time_state, y = frame_state), such that each (x and y) is a subset of z
-        While True:
-##            self.length = self.Frame_State_other.length
-##            for frame in length(range(self.Stream_other.length))
-##            self.latency = self.Frame_State_other.frame_latency # not working?
-            if self.Stream_other.frame_update == 1:
-                if Stream.state_time == 0: # state_time off
-                    time_state[self.Frame_State_other.frame] = 0
-                else:
-                    GPIO.output(pi2trig(15),1)
-                    time_state[self.Frame_State_other.frame] = 1 # state_time off
-
-                if self.Frame_State_other.frame == 0: # state_frame off
-                    frame_state[self.Frame_State_other.frame] = 0
-                else:
-                    if self.change == 0:
-                        GPIO.output(pi2trig(16),1)
-                        frame_state[self.Frame_State_other.frame] = 1 # state_frame on
-                    else:
-                        GPIO.output(pi2trig(17),1)
-                        frame_state[self.Frame_State_other.frame] = 1 # both state_frame && time_frame on
-                time.sleep(0.01)
-            else:
-                time.sleep(0.001)
-
-        return time_state, frame_state
-    
-    
-class Pin (Thread):
+class Pin_Off (Thread, Frame_Trigger_other):
     def __init__(self, Stream_other):
         Thread.__init__(self)
         self.Stream_other = Stream_other
@@ -395,11 +288,10 @@ class Pin (Thread):
         while True:
             if self.Stream_other.frame_update == 1:
                 self.trig_other.change = 0
-                time.sleep(0.01)
+                time.sleep(trig_gap)
                 GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
             else:
                 time.sleep(0.001)
-
 
 for block in range(block_num):
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
