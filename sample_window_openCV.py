@@ -7,8 +7,8 @@ import time
 #import numpy
 #import pygame
 #from threading import Thread
-import psychopy
-from psychopy import visual, core, event
+import opencv as cv2
+#from psychopy import visual, core, event
 
 #intialize colourspace
 red = (255, 0, 0)
@@ -70,18 +70,22 @@ end_screen = 'Congratulations, you have finished the experiment! Please contact 
 #mywin = visual.Window([1440, 900], monitor="testMonitor", units="deg", fullscr=True)
 
 # DEBUG WINDOW
-mywin = visual.Window(size=[400, 400], units="pix", fullscr=False, color=[1, 1, 1])
-mywin.mouseVisible = False
-fixation = visual.GratingStim(win=mywin, size=0.2, pos=[0, 0], sf=0)
-def text_time(text_blurb):
-    text = visual.TextStim(
-    win=mywin,
-    text=text_blurb,
-    color=[-1, -1, -1],
-    pos= [0,5])
-    text.draw()
-    fixation.draw()
-    mywin.flip()
+##mywin = visual.Window(size=[400, 400], units="pix", fullscr=False, color=[1, 1, 1])
+##mywin.mouseVisible = False
+##fixation = visual.GratingStim(win=mywin, size=0.2, pos=[0, 0], sf=0)
+##def text_time(text_blurb):
+##    text = visual.TextStim(
+##    win=mywin,
+##    text=text_blurb,
+##    color=[-1, -1, -1],
+##    pos= [0,5])
+##    text.draw()
+##    fixation.draw()
+##    mywin.flip()
+
+img = np.zeros((256,256,3), np.uint8)
+
+#cv2.rectangle(img,(384,0),(510,128),(0,255,0),3)
                             
 text_time(test_text)
 #text_time(test_text)  
@@ -89,22 +93,17 @@ text_time(test_text)
 
 #time.sleep(5) - works
 #GPIO.wait_for_edge(resp_pin,GPIO.RISING)
-time.sleep(1)
-text_time(instructions1)
-time.sleep(1)
-text_time(break_screen)
-#pixels.fill(red)
-time.sleep(1)
-text_time(end_screen)
+
+
 time.sleep(5)
 
 
 # throw the whole thing in a loop so the experiment can be stopped by the esc or q keys
 
-event.waitKeys(keyList="space") # space bar to quit the window
-mywin.mouseVisible = True
-
-# Cleanup
-mywin.close()
-core.quit()
+##event.waitKeys(keyList="space") # space bar to quit the window
+##mywin.mouseVisible = True
+##
+### Cleanup
+##mywin.close()
+##core.quit()
 
