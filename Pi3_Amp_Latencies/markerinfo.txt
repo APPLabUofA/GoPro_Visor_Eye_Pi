@@ -11,7 +11,7 @@
 
 
 
-Pi output
+Pi output csv
 # Column meanings
 # trig type - 1 is standard 2 is target
 # onset trig time latency

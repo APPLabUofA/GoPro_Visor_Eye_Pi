@@ -59,13 +59,16 @@ df3['Difference'] = df3['eeg_times'] - df3['pi_onset_latency']
 #%%
 # Plotting 
 # Latency plot
-
+plt.close('all')
 # matlibplot 
-plt.plot(df3['pi_onset_latency'], df3['level_0'])
-plt.plot(df3['eeg_times'], df3['level_0'])
-plt.legend('EP', ncol=2, loc='upper left'); # Figure legend
+plt.plot(df3['pi_onset_latency'], df3['level_0'], 'k--', label='Pi Times')
+plt.plot(df3['eeg_times'], df3['level_0'], 'ko', label='EEG Times')
+# plt.legend('EP', ncol=2, loc='upper left'); # Figure legend
 plt.xlabel('Latency (Seconds)')
 # plt.ylabel('Trial Count')
+legend = plt.legend(loc='upper center', shadow=True, fontsize='x-large')
+# Put a nicer background color on the legend.
+legend.get_frame().set_facecolor('C0')
 plt.show()
 
 # Difference plot
@@ -75,22 +78,21 @@ plt.xlabel('Latency (Seconds)')
 # plt.ylabel('Trial Count')
 plt.show()
 
-df4 = df3.copy() # convert from Pandas DataFrame to a numpy structure
-df4.info()
-## LinearRegression().fit(X, y) X=Training data (eeg_times), y=Target Values (pi_onset_latency)
-reg =  LinearRegression().fit(df3[:,5], df3[:,1])
-ss = df3[:,1]
-#reg.score(X, y)
-#reg.coef_
-#reg.intercept_ 
-#reg.predict(np.array([[3, 5]]))
+# %% ##Linear Transform
+df4 = df3.copy() # copy DataFrame 
+df4 = df4.values # convert from Pandas DataFrame to a numpy structure
 
+# %% ## Transform the eeg_times to align with the Pi times - we then need to output each participant time as a single array
+## loading it into each respective epoch dataframes as the updated times
+## LinearRegression().fit(X, y) X=Training data (eeg_times), y=Target Values (pi_onset_latency)
+reg =  LinearRegression().fit(df4[:,1].reshape(-1,1), df4[:,5].reshape(-1,1))
+reg.score(df4[:,1].reshape(-1,1), df4[:,5].reshape(-1,1))
 
 # %% ## Transformed Difference plot
-plt.plot(df3['Difference'], df3['level_0'])
-plt.legend('EEG - Pi', ncol=2, loc='upper left'); # Figure legend
+plt.plot(df4[:,11], df4[:,0])
+plt.legend('EEG - Pi', ncol=2, loc='upper left'); #  scalex=True, scaley=True if not using a custom xticks arguement
 plt.xlabel('Latency (Seconds)')
-# plt.ylabel('Trial Count')
+plt.xticks([-0.001, 0, 0.001])
 plt.show()
 
 
