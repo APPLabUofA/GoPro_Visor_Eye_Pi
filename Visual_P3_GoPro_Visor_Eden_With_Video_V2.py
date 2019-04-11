@@ -183,7 +183,6 @@ resp_latency = []
 block_start_stop = []
 exp_start_stop = []
 frame_state = [] # array of frame state
-frame_time
 ##setup our neopixels##
 pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write = True)
 
@@ -292,7 +291,66 @@ class Pin_Off (Thread, Frame_Trigger_other):
                 GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
             else:
                 time.sleep(0.001)
+                
+##########################################
+# %% Threading of experiment itself to deal with systemic jitter an messy timings
 
+class ColourTimeFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
+    pass
+
+class TrigTimeFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
+    pass
+
+def Timer_LED(colour):
+    colour_timer = Timer(LED_ON, lambda: raise ColourTimeFlag) # start time that will wait one frame duration - then throws error
+    colour_timer.start()
+    try:
+        pixels.fill(colour)
+        time.sleep(5)
+    except ColourTimeFlag: # allows ColourTimeFlag to pass
+            pass
+    pixels.fill(blank)
+    return
+        
+def Timer_Trig(trig):
+    trig_timer = Timer(trig_gap, lambda: raise TrigTimeFlag) # start time that will wait one frame duration - then throws error
+    trig_timer.start()
+    try:
+        GPIO.output(pi2trig(trig),1)
+        time.sleep(1)
+    except TrigTimeFlag: # allows TrigTimeFlag to pass
+            pass
+    GPIO.output(pi2trig(255),0)
+    return    
+
+class Colour_Switch (Thread):
+    def __init__(self): # pulls both time and state into itself as per being defined in the initial state machine
+        Thread.__init__(self)
+    def run(self):
+        While True:
+            if trig_state == 0
+                time.sleep(0.0001) # 1/10 of a millisecond
+            else:
+                if colour_state = 1:
+                Timer_LED_ON(green)
+                elif colour_state == 2:
+                    Timer_LED(blue)
+                else:
+                    Timer_LED(red)
+                return tc_state
+
+class Trig_Switch (Thread):
+    def __init__(self): # pulls both time and state into itself as per being defined in the initial state machine
+        Thread.__init__(self)
+    def run(self):
+        While True:
+            if trig_state == 0
+                time.sleep(0.0001) # 1/10 of a millisecond
+            else:
+                Timer_Trig(trig_state)
+                tc_state = 0
+                return tc_state   
+                  
 for block in range(block_num):
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
     Stream.run # initalize the video stream - on the viewpixx
@@ -322,12 +380,10 @@ for block in range(block_num):
         delay_length.append(delay)
         ##determine the type of stimuli we will show on this trial##
         if trials[i_trial] == 0: #standards
-            trig = 1
-            pixels.fill(green)
+            tc_state = 1 # green
     ##                pi.write(4, 1)
         elif trials[i_trial] == 1: #targets
-            trig = 2
-            pixels.fill(blue)
+            tc_state = 2 # blue
     ##                pi.write(17, 1)
         GPIO.output(pi2trig(trig),1) ## Specify which trigger to send Standard vs Target
         trig_type.append(trig)

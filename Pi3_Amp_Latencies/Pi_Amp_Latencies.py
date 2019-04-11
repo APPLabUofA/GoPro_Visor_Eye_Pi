@@ -50,6 +50,11 @@ df2 = df1[criteria_all] # Unalignable boolean Series provided as indexer (index 
 # deal with this with the following - df2 = df2.reset_index()
 # %% 
 df2 = df2.reset_index()
+
+# %% 
+#df_GoPro = pd.read_csv(())
+df2 = df2.T # transpose for plotting purposes
+df2.columns
 # %%
 # Combine the two into a single dataframe ? Nah, not for now
 #all_onset_latencies = pd.concat([df1.assign(dataset='df1'), df2.assign(dataset='df2')])
@@ -63,17 +68,15 @@ plt.close('all')
 # matlibplot 
 plt.plot(df3['pi_onset_latency'], df3['level_0'], 'k--', label='Pi Times')
 plt.plot(df3['eeg_times'], df3['level_0'], 'ko', label='EEG Times')
-# plt.legend('EP', ncol=2, loc='upper left'); # Figure legend
 plt.xlabel('Latency (Seconds)')
 # plt.ylabel('Trial Count')
 legend = plt.legend(loc='upper center', shadow=True, fontsize='x-large')
-# Put a nicer background color on the legend.
 legend.get_frame().set_facecolor('C0')
 plt.show()
 
 # Difference plot
-plt.plot(df3['Difference'], df3['level_0'])
-plt.legend('EEG - Pi', ncol=2, loc='upper left'); # Figure legend
+plt.plot(df3['Difference'], df3['level_0'], label='EEG - Pi')
+legend = plt.legend(loc='upper left', shadow=True, fontsize='x-large')
 plt.xlabel('Latency (Seconds)')
 # plt.ylabel('Trial Count')
 plt.show()
@@ -88,12 +91,15 @@ df4 = df4.values # convert from Pandas DataFrame to a numpy structure
 reg =  LinearRegression().fit(df4[:,1].reshape(-1,1), df4[:,5].reshape(-1,1))
 reg.score(df4[:,1].reshape(-1,1), df4[:,5].reshape(-1,1))
 
+df4[:,1] = reg.intercept_ + df4[:,1]*reg.coef_
+
 # %% ## Transformed Difference plot
 plt.plot(df4[:,11], df4[:,0])
 plt.legend('EEG - Pi', ncol=2, loc='upper left'); #  scalex=True, scaley=True if not using a custom xticks arguement
 plt.xlabel('Latency (Seconds)')
 plt.xticks([-0.001, 0, 0.001])
 plt.show()
+
 
 
 
