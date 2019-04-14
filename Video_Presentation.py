@@ -188,13 +188,7 @@ shuffle(trials) # randomize order of standards and targets
 
 ##variables to save trial information##
 trig_time   = []
-trig_type = []
-delay_length  = []
-trial_resp = []
-jitter_length = []
-resp_latency = []
-block_start_stop = []
-exp_start_stop = []
+LED_time = []
 frame_state = [] # array of frame state
 ##setup our neopixels##
 pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write = True)
@@ -242,22 +236,22 @@ class Stream (Thread): # construct - not an object
         cap = cv2.VideoCapture(self.file)
         self.start_time = time.time()
         while True:
-            timer = Timer(self.frame_latency, lambda: raise EndFrameFlag) # start time that will wait one frame duration - then throws error
+            timer = timer(self.frame_latency, lambda raise EndFrameFlag) # start time that will wait one frame duration - then throws error
             timer.start()
 
             try:
                 # Capture frame-by-frame
                 ret, frame = cap.read()  # ret = 1 if the video is captured; frame is the image
                 self.time = time.time() - self.start_time # gets the time of a given frame from the begining of the first frame
-                img = np.zeros((screen_res[0],screen_res[1],3), np.uint8) # 1960 X 1200 X 3
-                img[width-4:width+4, height-24:height+24, :] = 255
-                img[width-50:width+50, height-2:height+2, :] = 255
+#                img = np.zeros((screen_res[0],screen_res[1],3), np.uint8) # 1960 X 1200 X 3
+#                img[width-4:width+4, height-24:height+24, :] = 255
+#                img[width-50:width+50, height-2:height+2, :] = 255
                 # Display the resulting image
                 cv2.imshow('Video', frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):  # press q to quit
                     break
                 # immediately after the frame is drawn then a second timer is started to flash the frame_update for 10 ms
-                frame_timer = Timer(self.frame_update_time, lambda: raise EndFrameUpdateFlag)
+                frame_timer = timer(self.frame_update_time, lambda: raise EndFrameUpdateFlag)
                 frame_timer.start()
 
                 try:
@@ -321,23 +315,21 @@ def Timer_LED(colour):
     colour_timer = Timer(LED_ON, lambda: raise ColourTimeFlag) # start time that will wait one frame duration - then throws error
     colour_timer.start()
     try:
-        pixels.fill(colour)
+        LED_time.append(time.time()-start_exp)
         time.sleep(5)
     except ColourTimeFlag: # allows ColourTimeFlag to pass
             pass
-    pixels.fill(blank)
     return
         
 def Timer_Trig(trig):
     trig_timer = Timer(trig_gap, lambda: raise TrigTimeFlag) # start time that will wait one frame duration - then throws error
     trig_timer.start()
     try:
-        GPIO.output(pi2trig(trig),1)
+        trig_time.append(time.time()-start_exp)
         time.sleep(1)
     except TrigTimeFlag: # allows TrigTimeFlag to pass
             pass
-    GPIO.output(pi2trig(255),0)
-    return    
+    return trig_time  
 
 class Colour_Switch (Thread):
     def __init__(self): # pulls both time and state into itself as per being defined in the initial state machine
@@ -367,19 +359,18 @@ class Trig_Switch (Thread):
                 tc_state = 0
                 return tc_state 
 
-Tutorial            
+#Tutorial            
 if __name__ == '__main__':
-#    refresh_screen()
-    img = np.zeros((screen_res[0],screen_res[1],3), np.uint8) # 1960 X 1200 X 3
-    img[width-4:width+4, height-24:height+24, :] = 255
-    img[width-50:width+50, height-2:height+2, :] = 255
+    refresh_screen()
     window_name = 'projector'
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     cv2.imshow(window_name, img)
     for i in length(instruct)
         cv2.putText(img,instruct(i),(int(2*width/5),height), cv2.FONT_HERSHEY_SIMPLEX , 1,(255,255,255),2,cv2.LINE_AA)
-        GPIO.wait_for_edge(resp_pin,GPIO.RISING)
+        cv2.waitKey(33) == ord('a'):
+        refresh_screen()
+        cv2.imshow(window_name, img)
            
                     
 # %% Experiment itself                   
