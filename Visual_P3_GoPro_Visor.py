@@ -9,7 +9,7 @@ import numpy as np
 import cv2
 
 #Define Window
-screen_res = 1024, 1280
+screen_res = 1080,1920 
 width = int(screen_res[0]/2) # half width
 height = int(screen_res[1]/2) # half height
 
@@ -30,7 +30,7 @@ Start_Instruct = [instr_0,instr_1, instr_2, instr_3, instr_4]
 Break_Instruct = [instr_5, instr_6]
 End_Instruct = [instr_7, instr_8]
 
-# Positions of text
+# Positions of text # Change all these - independent of aspect ratio
 Space_Propmt_Width = [(int(screen_res[1]/3),int(screen_res[1]/3))]
 Start_Instruct_Width = [(int(screen_res[1]/3),int(screen_res[1]/3)),(int(screen_res[1]/5),int(screen_res[1]/3)),(int(screen_res[1]/3),int(screen_res[1]/3)),(int(screen_res[1]/4),int(screen_res[1]/3)),(int(screen_res[1]/6),int(screen_res[1]/3)),(int(screen_res[1]/4),int(screen_res[1]/3))]
 Break_Instruct_Width = [(int(screen_res[1]/3),int(screen_res[1]/3)),(int(screen_res[1]/6),int(screen_res[1]/2))]
@@ -230,8 +230,8 @@ pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write
 #Construct window + draw instructions before the experiment begins
 if __name__ == '__main__':
     window_name = 'projector'
-####    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-####    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     for i in range(len(Start_Instruct)):
         img = np.zeros((int(screen_res[0]),int(screen_res[1]),3), np.uint8) # 1960 X 1200 X 3 # all zeros = all black
         cv2.putText(img,Start_Instruct[i],Start_Instruct_Width[i], cv2.FONT_HERSHEY_COMPLEX_SMALL , 1,(255,255,255),2,cv2.LINE_AA)
