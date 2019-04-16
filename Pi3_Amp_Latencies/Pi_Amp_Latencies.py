@@ -8,11 +8,11 @@ import mne
 
 plt.close('all')
 
-trials = 250;
+trials = 100;
 blocks = 1;
 
 # # The only thing you need to change is going to be par (participant number) the rest will be dictated by dictionaries
-par = "012"
+par = "014"
 
 
 # %% We will now load in the EEG data 
@@ -38,15 +38,15 @@ df1 = df1.drop(columns='index')
 
 
 # %% Here we extract thhe Pi times (imported as df2)
-df2 = pd.read_csv((r'C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Pi_Time_Data\012_visual_p3_gopro_visor.csv'), sep=',', header=None)
+df2 = pd.read_csv((r'C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Pi_Time_Data\014_visual_p3_gopro_visor.csv'), sep=',', header=None)
 df2 = df2.T # transpose for plotting purposes
-df2.columns = ['pi_type','pi_onset_latency','pi_delay','pi_resp','pi_jitter','pi_resp_latency','pi_start_stop'] # name the coloumns
+df2.columns = ['pi_type','pi_onset_latency','pi_delay','pi_resp','pi_jitter','pi_resp_latency','block_start_stop','pi_start_stop',] # name the coloumns
 df2 = df2.apply(pd.to_numeric, args=('coerce',))  ## Convert to numeric
 df2= df2.dropna(thresh=2)
 criteria_1 = df2['pi_type'] == 1 
 criteria_2 =  df2['pi_type'] == 2
 criteria_all = criteria_1 | criteria_2
-df2 = df1[criteria_all] # Unalignable boolean Series provided as indexer (index of the boolean Series and of the indexed object do not match
+df2 = df2[criteria_all] # Unalignable boolean Series provided as indexer (index of the boolean Series and of the indexed object do not match
 # deal with this with the following - df2 = df2.reset_index()
 # %% 
 df2 = df2.reset_index()
@@ -84,7 +84,7 @@ plt.show()
 # %% ##Linear Transform
 df4 = df3.copy() # copy DataFrame 
 df4 = df4.values # convert from Pandas DataFrame to a numpy structure
-
+df4 = df4[:,12] = df4[:,1]-df4[:,5]
 # %% ## Transform the eeg_times to align with the Pi times - we then need to output each participant time as a single array
 ## loading it into each respective epoch dataframes as the updated times
 ## LinearRegression().fit(X, y) X=Training data (eeg_times), y=Target Values (pi_onset_latency)
@@ -92,12 +92,15 @@ reg =  LinearRegression().fit(df4[:,1].reshape(-1,1), df4[:,5].reshape(-1,1))
 reg.score(df4[:,1].reshape(-1,1), df4[:,5].reshape(-1,1))
 
 df4[:,1] = reg.intercept_ + df4[:,1]*reg.coef_
-
+df4[:,11] = df4[:,1]-df4[:,5]
+df4[:,10] = df4[:,1]-df4[:,5]
 # %% ## Transformed Difference plot
 plt.plot(df4[:,11], df4[:,0])
+#plt.plot(df4[:,10], df4[:,0]) #plot the difference of the difference 
+##plt.plot(df3['Difference'], df3['level_0'], label='EEG - Pi')
 plt.legend('EEG - Pi', ncol=2, loc='upper left'); #  scalex=True, scaley=True if not using a custom xticks arguement
 plt.xlabel('Latency (Seconds)')
-plt.xticks([-0.001, 0, 0.001])
+#plt.xlim([-0.001, 0, 0.001])
 plt.show()
 
 

@@ -23,17 +23,25 @@ for i, col in enumerate(colours):
 
 
 img = cv2.imread('Green_Flash_2.JPG')
+fig, (ax1,ax2) = plt.subplots(2, sharex=True)
+ax1 = fig.add_subplot(2,1,1)
+ax2 = fig.add_subplot(2,1,2)
+#while (cap.isOpened()):  # play the video by reading frame by frame
 
 #equalizeHistColor(img)
     # this just calculates a frame# X 3 matrix of mean,std, and sum
 for i,col in enumerate(colours):
     histr = cv2.calcHist([img],[i],None,[256],[0,256])
-    equalizeHistColor(img)
+    
     globals()[str(colours[i]) + "_frame_hist_data"] = histr
     globals()[str(colours[i]) + "_frame_hist"][(0,0)] = np.mean(histr[100:-1])
     globals()[str(colours[i]) + "_frame_hist"][(0,1)] = np.std(histr[100:-1])
     globals()[str(colours[i]) + "_frame_hist"][(0,2)] = np.sum(histr[100:-1])
+    img2 = equalizeHistColor(img)
+    histr_norm = cv2.calcHist([img2],[i],None,[256],[0,256]) 
     plt.plot(histr,color = col)
+    ax1.plot(histr,color = col)
+    ax2.plot(histr_norm, color = col)
     plt.xlim([0,256])
     plt.show()
     
