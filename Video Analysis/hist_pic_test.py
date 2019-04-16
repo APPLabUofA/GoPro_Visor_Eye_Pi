@@ -22,16 +22,17 @@ for i, col in enumerate(colours):
 
 
 
-img = cv2.imread('Green_Flash.JPG')
+img = cv2.imread('Green_Flash_2.JPG')
 
 #equalizeHistColor(img)
     # this just calculates a frame# X 3 matrix of mean,std, and sum
 for i,col in enumerate(colours):
     histr = cv2.calcHist([img],[i],None,[256],[0,256])
     equalizeHistColor(img)
-    globals()[str(colours[i]) + "_frame_hist"][(0,0)] = np.mean(histr)
-    globals()[str(colours[i]) + "_frame_hist"][(0,1)] = np.std(histr)
-    globals()[str(colours[i]) + "_frame_hist"][(0,2)] = np.sum(histr)
+    globals()[str(colours[i]) + "_frame_hist_data"] = histr
+    globals()[str(colours[i]) + "_frame_hist"][(0,0)] = np.mean(histr[100:-1])
+    globals()[str(colours[i]) + "_frame_hist"][(0,1)] = np.std(histr[100:-1])
+    globals()[str(colours[i]) + "_frame_hist"][(0,2)] = np.sum(histr[100:-1])
     plt.plot(histr,color = col)
     plt.xlim([0,256])
     plt.show()

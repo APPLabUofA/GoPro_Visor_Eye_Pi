@@ -72,18 +72,16 @@ cap = cv2.VideoCapture(0)  # load the video
 #length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 #
 for i, col in enumerate(colours):
-    globals()[str(colours[i]) + "_frame_hist"] = np.zeros((1,256))
-    np.transpose(globals()[str(colours[i]) + "_frame_hist"])
+	globals()[str(colours[i]) + "_frame_hist"] = np.zeros((1,3))
 
 for i, col in enumerate(colours):
 	globals()[str(colours[i]) + "_frame_hist_values"] = np.zeros((1,3))
 
 for i, col in enumerate(colours):
-    globals()[str(colours[i]) + "_norm_frame_hist"] = np.zeros((1,256))
-    np.transpose(globals()[str(colours[i]) + "_norm_frame_hist"])
+	globals()[str(colours[i]) + "_norm_frame_hist"] = np.zeros((1,3))
 
 for i, col in enumerate(colours):
-    globals()[str(colours[i]) + "_norm_frame_hist_values"] = np.zeros((1,3))
+	globals()[str(colours[i]) + "_norm_frame_hist_values"] = np.zeros((1,3))
 
 cap = cv2.VideoCapture(0)
 fig, (ax1,ax2) = plt.subplots(2, sharex=True)
@@ -97,19 +95,18 @@ while(True):
 # if ret == True
 # this just calculates a frame# X 3 matrix of mean,std, and sum
     for i,col in enumerate(colours):
-        histr = np.array([cv2.calcHist([frame],[i],None,[256],[0,256])])
-        histr_t = np.squeeze(histr, axis=(2))
-#        hist_values = (np.mean(histr[100:-1]),np.std(histr[100:-1]),np.sum(histr[100:-1]))
-#        globals()[str(colours[i]) + "_frame_hist_values"]= np.vstack(globals()[str(colours[i]) + "_frame_hist_values"],hist_values)
-        globals()[str(colours[i]) + "_frame_hist"] = np.append(globals()[str(colours[i]) + "_frame_hist"],histr_t, axis=0)
+        histr = cv2.calcHist([frame],[i],None,[256],[0,256])  
+        hist_values = [np.mean(histr[100:-1]),np.std(histr[100:-1]),np.sum(histr[100:-1])]
+        globals()[str(colours[i]) + "_frame_hist_values"]= np.append(globals()[str(colours[i]) + "_frame_hist_values"],hist_values)
+        globals()[str(colours[i]) + "_frame_hist"] = np.append((globals()[str(colours[i]) + "_frame_hist"]),histr)
+        test = col +'_try'
         
         #####The same for the equalized histogram
         img = equalizeHistColor(frame)
-        histr_norm = cv2.calcHist([img],[i],None,[256],[0,256]) 
-        histr_norm_t = histr_norm.reshape(1,-1)
-#        hist_norm_values = [np.mean(histr_norm[100:-1]),np.std(histr_norm[100:-1]),np.sum(histr_norm[100:-1])]
-#        globals()[str(colours[i]) + "_norm_frame_hist_values"]= np.concatenate(globals()[str(colours[i]) + "_frame_hist_values"],hist_norm_values)
-        globals()[str(colours[i]) + "_norm_frame_hist"] = np.append(globals()[str(colours[i]) + "_norm_frame_hist"],histr_norm_t, axis=0)
+        histr_norm = cv2.calcHist([img],[i],None,[256],[0,256])  
+        hist_norm_values = [np.mean(histr_norm[100:-1]),np.std(histr_norm[100:-1]),np.sum(histr_norm[100:-1])]
+        globals()[str(colours[i]) + "norm_frame_hist_values"]= np.append(globals()[str(colours[i]) + "_frame_hist_values"],hist_norm_values)
+        globals()[str(colours[i]) + "norm_frame_hist"] = np.append((globals()[str(colours[i]) + "_frame_hist"]),histr_norm)
 
         ax1.plot(histr,color = col)
         ax2.plot(histr_norm, color = col)
@@ -138,7 +135,7 @@ while(True):
     cv2.imshow('New', frame) #show the new frame
     cv2.imshow('',img)
     #count += 1
-    if cv2.waitKey(1000)& 0xFF == ord('q'):
+    if cv2.waitKey(1)& 0xFF == ord('q'):
         break
 
     # When everything done, release the capture
