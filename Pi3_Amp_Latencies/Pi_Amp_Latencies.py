@@ -8,17 +8,18 @@ import mne
 
 plt.close('all')
 
-trials = 100;
-blocks = 1;
+#trials = 100;
+#blocks = 1;
 
 # # The only thing you need to change is going to be par (participant number) the rest will be dictated by dictionaries
-par = "014"
+par = "002"
 
 
 # %% We will now load in the EEG data 
 #### Now we will go through the EEG file and determine our latencies
 
-filename = 'M:\Data\GoPro_Visor\Pi_Amp_Latency_Test\\testing_visor_pi_' + par + '.vhdr'
+# filename = 'M:\Data\GoPro_Visor\Pi_Amp_Latency_Test\\testing_visor_pi_' + par + '.vhdr' # pre-pilot
+filename = 'M:\Data\GoPro_Visor\Experiment_1\\' + par + '_GoPro_Visor_Eye_Pi.vhdr' # pilot
 raw = mne.io.read_raw_brainvision(filename)
 df1 = mne.find_events(raw) # outputs a numpy.ndarray
 df1 = np.insert(df1,0,[0],axis = 0) #shift data one row down from the top so we don't miss the first event on o
@@ -38,7 +39,8 @@ df1 = df1.drop(columns='index')
 
 
 # %% Here we extract thhe Pi times (imported as df2)
-df2 = pd.read_csv((r'C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Pi_Time_Data\014_visual_p3_gopro_visor.csv'), sep=',', header=None)
+#df2 = pd.read_csv((r'C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Pi_Time_Data\014_visual_p3_gopro_visor.csv'), sep=',', header=None) # pre-pilot
+df2 = pd.read_csv((r'C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pilot_Data\Experiment_1\Pi_Times\002_visual_p3_gopro_visor.csv'), sep=',', header=None) # pilot
 df2 = df2.T # transpose for plotting purposes
 df2.columns = ['pi_type','pi_onset_latency','pi_delay','pi_resp','pi_jitter','pi_resp_latency','block_start_stop','pi_start_stop',] # name the coloumns
 df2 = df2.apply(pd.to_numeric, args=('coerce',))  ## Convert to numeric
@@ -53,8 +55,8 @@ df2 = df2.reset_index()
 
 # %% 
 #df_GoPro = pd.read_csv(())
-df2 = df2.T # transpose for plotting purposes
-df2.columns
+#df2 = df2.T # transpose for plotting purposes
+#df2.columns
 # %%
 # Combine the two into a single dataframe ? Nah, not for now
 #all_onset_latencies = pd.concat([df1.assign(dataset='df1'), df2.assign(dataset='df2')])
@@ -66,6 +68,7 @@ df3['Difference'] = df3['eeg_times'] - df3['pi_onset_latency']
 # Latency plot
 plt.close('all')
 # matlibplot 
+plt.figure(0)
 plt.plot(df3['pi_onset_latency'], df3['level_0'], 'k--', label='Pi Times')
 plt.plot(df3['eeg_times'], df3['level_0'], 'ko', label='EEG Times')
 plt.xlabel('Latency (Seconds)')
@@ -75,6 +78,7 @@ legend.get_frame().set_facecolor('C0')
 plt.show()
 
 # Difference plot
+plt.figure(1)
 plt.plot(df3['Difference'], df3['level_0'], label='EEG - Pi')
 legend = plt.legend(loc='upper left', shadow=True, fontsize='x-large')
 plt.xlabel('Latency (Seconds)')
@@ -84,7 +88,7 @@ plt.show()
 # %% ##Linear Transform
 df4 = df3.copy() # copy DataFrame 
 df4 = df4.values # convert from Pandas DataFrame to a numpy structure
-df4 = df4[:,12] = df4[:,1]-df4[:,5]
+df4[:,12] = df4[:,1]-df4[:,5]
 # %% ## Transform the eeg_times to align with the Pi times - we then need to output each participant time as a single array
 ## loading it into each respective epoch dataframes as the updated times
 ## LinearRegression().fit(X, y) X=Training data (eeg_times), y=Target Values (pi_onset_latency)
@@ -93,11 +97,12 @@ reg.score(df4[:,1].reshape(-1,1), df4[:,5].reshape(-1,1))
 
 df4[:,1] = reg.intercept_ + df4[:,1]*reg.coef_
 df4[:,11] = df4[:,1]-df4[:,5]
-df4[:,10] = df4[:,1]-df4[:,5]
+df4[:,10] = df4[:,12]-df4[:,11]
 # %% ## Transformed Difference plot
+plt.figure(2)
 plt.plot(df4[:,11], df4[:,0])
-#plt.plot(df4[:,10], df4[:,0]) #plot the difference of the difference 
-##plt.plot(df3['Difference'], df3['level_0'], label='EEG - Pi')
+#plt.plot(df4[:,10], df4[:,0]) #plot the magnitude of the difference 
+#plt.plot(df3['Difference'], df3['level_0'], label='EEG - Pi') # plot untransformed
 plt.legend('EEG - Pi', ncol=2, loc='upper left'); #  scalex=True, scaley=True if not using a custom xticks arguement
 plt.xlabel('Latency (Seconds)')
 #plt.xlim([-0.001, 0, 0.001])

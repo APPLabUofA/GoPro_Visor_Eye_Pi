@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.ticker as ticker
 
 frames = 1
 colours = ['b','g','r']
@@ -14,7 +15,7 @@ Trigger_Stop = []
 Tigger_State = []
 
 # Want a frame of each start trigger saved to a folder
-
+majors = ["", "0", "1", "2", "3", "4", "5"]
 # Second Pass for extracting epochs based off first pass - figure out later
 # Eventually will output an ~[-1,1] video epoch to be the raw input for deep learning
 Trigger_Epoch = []
@@ -29,7 +30,7 @@ in_format = '.avi'
 in_file = part + exp + in_format
 
 if webcam == 1:
-    in_file = ''
+    in_file = 0
 
 # %% # Are we saving an output file (file with overlaid filters/bounders/manipulations)?
 
@@ -64,9 +65,19 @@ def equalizeHistColor(frame):
     img[:,:,2] = cv2.equalizeHist(img[:,:,2])     # equalize the histogram of the V channel
     return cv2.cvtColor(img, cv2.COLOR_HSV2RGB)   # convert the HSV image back to RGB format
 
-
+def setup(ax):
+    ax.spines['right'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.yaxis.set_major_locator(ticker.NullLocator())
+    ax.spines['top'].set_color('none')
+    ax.xaxis.set_ticks_position('bottom')
+    ax.tick_params(which='major', width=1.00, length=5)
+    ax.tick_params(which='minor', width=0.75, length=2.5, labelsize=10)
+    ax.set_xlim(0, 5)
+    ax.set_ylim(0, 1)
+    ax.patch.set_alpha(0.0)
 # %% Loop through frames
-cap = cv2.VideoCapture(0)  # load the video
+cap = cv2.VideoCapture(in_file)  # load the video
 #post_frame = cap.get(1) # CV_CAP_PROP_POS_FRAMES #0-based index of the frame to be decoded/captured next
 #count = 0 # which frame
 #length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -83,10 +94,57 @@ for i, col in enumerate(colours):
 for i, col in enumerate(colours):
 	globals()[str(colours[i]) + "_norm_frame_hist_values"] = np.zeros((1,3))
 
-cap = cv2.VideoCapture(0)
+plt.ion()
 fig, (ax1,ax2) = plt.subplots(2, sharex=True)
 ax1 = fig.add_subplot(2,1,1)
 ax2 = fig.add_subplot(2,1,2)
+title = ax1.set_title("My plot", fontsize='large')
+
+#setup(ax1)
+#ax1.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
+#ax1.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+#
+#ax1.xaxis.set_major_formatter(ticker.FixedFormatter(majors))
+#minors = [""] + ["%.2f" % (x-int(x)) if (x-int(x))
+#                 else "" for x in np.arange(0, 5, 0.25)]
+#ax1.xaxis.set_minor_formatter(ticker.FixedFormatter(minors))
+#ax1.text(0.0, 0.1, "FixedFormatter(['', '0', '1', ...])",
+#        fontsize=15, transform=ax1.transAxes)
+#
+#setup(ax2)
+#ax2.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
+#ax2.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+#majors = ["", "0", "1", "2", "3", "4", "5"]
+#ax2.xaxis.set_major_formatter(ticker.FixedFormatter(majors))
+#minors = [""] + ["%.2f" % (x-int(x)) if (x-int(x))
+#                 else "" for x in np.arange(0, 5, 0.25)]
+#ax2.xaxis.set_minor_formatter(ticker.FixedFormatter(minors))
+#ax2.text(0.0, 0.1, "FixedFormatter(['', '0', '1', ...])",
+#        fontsize=15, transform=ax2.transAxes)
+#ax2.yaxis.set
+plt.tick_params(
+    axis='x',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    labelbottom=False) # labels along the bottom edge are off
+
+#setup(ax1)
+#ax1.xaxis.set_major_locator(ticker.MultipleLocator(1.00))
+#ax1.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+#ax1.xaxis.set_major_formatter(ticker.NullFormatter())
+#ax1.xaxis.set_minor_formatter(ticker.NullFormatter())
+#ax1.yaxis.set_major_locator(ticker.MultipleLocator(1.00))
+#ax1.yaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+#ax1.yaxis.set_major_formatter(ticker.NullFormatter())
+#ax1.yaxis.set_minor_formatter(ticker.NullFormatter())
+#
+#setup(ax2)
+#ax2.xaxis.set_major_locator(ticker.MultipleLocator(1.00))
+#ax2.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+#ax2.xaxis.set_major_formatter(ticker.NullFormatter())
+#ax2.xaxis.set_minor_formatter(ticker.NullFormatter())
+
 #while (cap.isOpened()):  # play the video by reading frame by frame
 while(True):
     ret, frame = cap.read()
@@ -107,9 +165,9 @@ while(True):
         hist_norm_values = [np.mean(histr_norm[100:-1]),np.std(histr_norm[100:-1]),np.sum(histr_norm[100:-1])]
         globals()[str(colours[i]) + "norm_frame_hist_values"]= np.append(globals()[str(colours[i]) + "_frame_hist_values"],hist_norm_values)
         globals()[str(colours[i]) + "norm_frame_hist"] = np.append((globals()[str(colours[i]) + "_frame_hist"]),histr_norm)
+        ax1.plot(histr[100:256],color = col)
+        ax2.plot(histr_norm[100:256], color = col)
 
-        ax1.plot(histr,color = col)
-        ax2.plot(histr_norm, color = col)
     plt.draw()
         
     #this splits into 3 np arrays, one for each r,g,b channel
@@ -132,8 +190,8 @@ while(True):
     
 #        if count % 500 == 0: # every 10th frame, show frame
 #            cv2.imshow('Original', frame)  # show the original frame
-    cv2.imshow('New', frame) #show the new frame
-    cv2.imshow('',img)
+    cv2.imshow('Original', frame) #show the new frame
+    cv2.imshow('Equalized Histogram',img)
     #count += 1
     if cv2.waitKey(1)& 0xFF == ord('q'):
         break
