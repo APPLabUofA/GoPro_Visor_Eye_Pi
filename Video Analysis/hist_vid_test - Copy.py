@@ -4,6 +4,9 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
 
+
+# %% Initalize Variables + Lists
+
 frames = 1
 colours = ['b','g','r']
 
