@@ -1,3 +1,4 @@
+# %% Imports
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
@@ -7,18 +8,24 @@ frames = 1
 colours = ['b','g','r']
 
 # First Pass
-# List of [frame + start event trigger] (where the max[index] = corresponds with the last EEG event)
-Trigger_Start = []
-# List of [frame + end event trigger]
-Trigger_Stop = []
-# List of [frame + trigger state] (0 B + G channels below thresholds, 1 above B channel threshold, 2 above R channel threshold
-Tigger_State = []
-
-# Want a frame of each start trigger saved to a folder
-majors = ["", "0", "1", "2", "3", "4", "5"]
+Trigger_Start = [] # List of [frame + start event trigger] (where the max[index] = corresponds with the last EEG event)
+Trigger_Stop = [] # List of [frame + end event trigger]
+Tigger_State = [] # List of [frame + trigger state] (0 B + G channels below thresholds, 1 above B channel threshold, 2 above R channel threshold
 # Second Pass for extracting epochs based off first pass - figure out later
-# Eventually will output an ~[-1,1] video epoch to be the raw input for deep learning
-Trigger_Epoch = []
+Trigger_Epoch = [] # Eventually will output an ~[-1,1] video epoch to be the raw input for deep learning
+
+for i, col in enumerate(colours):
+	globals()[str(colours[i]) + "_frame_hist"] = np.zeros((1,3))
+
+for i, col in enumerate(colours):
+	globals()[str(colours[i]) + "_frame_hist_values"] = np.zeros((1,3))
+
+for i, col in enumerate(colours):
+	globals()[str(colours[i]) + "_norm_frame_hist"] = np.zeros((1,3))
+
+for i, col in enumerate(colours):
+	globals()[str(colours[i]) + "_norm_frame_hist_values"] = np.zeros((1,3))
+
 
 
 webcam = 1 # set to 1 if input is a webcam
@@ -33,14 +40,13 @@ if webcam == 1:
     in_file = 0
 
 # %% # Are we saving an output file (file with overlaid filters/bounders/manipulations)?
-
- # # Version - example '001' or '054'
+# Version - example '001' or '054'
 out_format = '.avi'
 out_file = part + exp + out_format
 
 # Output file parameter
 imgSize=(640,480) # likely best to set to original  dimensions
-frame_per_second=30.0
+frame_per_second=240.0
 writer = cv2.VideoWriter(out_format, cv2.VideoWriter_fourcc(*"MJPG"), frame_per_second,imgSize,False)
 
 # %% Load in participant specific info - frame number of events
@@ -82,17 +88,6 @@ cap = cv2.VideoCapture(in_file)  # load the video
 #count = 0 # which frame
 #length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 #
-for i, col in enumerate(colours):
-	globals()[str(colours[i]) + "_frame_hist"] = np.zeros((1,3))
-
-for i, col in enumerate(colours):
-	globals()[str(colours[i]) + "_frame_hist_values"] = np.zeros((1,3))
-
-for i, col in enumerate(colours):
-	globals()[str(colours[i]) + "_norm_frame_hist"] = np.zeros((1,3))
-
-for i, col in enumerate(colours):
-	globals()[str(colours[i]) + "_norm_frame_hist_values"] = np.zeros((1,3))
 
 plt.ion()
 fig, (ax1,ax2) = plt.subplots(2, sharex=True)
@@ -100,50 +95,13 @@ ax1 = fig.add_subplot(2,1,1)
 ax2 = fig.add_subplot(2,1,2)
 title = ax1.set_title("My plot", fontsize='large')
 
-#setup(ax1)
-#ax1.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
-#ax1.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
-#
-#ax1.xaxis.set_major_formatter(ticker.FixedFormatter(majors))
-#minors = [""] + ["%.2f" % (x-int(x)) if (x-int(x))
-#                 else "" for x in np.arange(0, 5, 0.25)]
-#ax1.xaxis.set_minor_formatter(ticker.FixedFormatter(minors))
-#ax1.text(0.0, 0.1, "FixedFormatter(['', '0', '1', ...])",
-#        fontsize=15, transform=ax1.transAxes)
-#
-#setup(ax2)
-#ax2.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
-#ax2.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
-#majors = ["", "0", "1", "2", "3", "4", "5"]
-#ax2.xaxis.set_major_formatter(ticker.FixedFormatter(majors))
-#minors = [""] + ["%.2f" % (x-int(x)) if (x-int(x))
-#                 else "" for x in np.arange(0, 5, 0.25)]
-#ax2.xaxis.set_minor_formatter(ticker.FixedFormatter(minors))
-#ax2.text(0.0, 0.1, "FixedFormatter(['', '0', '1', ...])",
-#        fontsize=15, transform=ax2.transAxes)
-#ax2.yaxis.set
+
 plt.tick_params(
     axis='x',          # changes apply to the x-axis
     which='both',      # both major and minor ticks are affected
     bottom=False,      # ticks along the bottom edge are off
     top=False,         # ticks along the top edge are off
     labelbottom=False) # labels along the bottom edge are off
-
-#setup(ax1)
-#ax1.xaxis.set_major_locator(ticker.MultipleLocator(1.00))
-#ax1.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
-#ax1.xaxis.set_major_formatter(ticker.NullFormatter())
-#ax1.xaxis.set_minor_formatter(ticker.NullFormatter())
-#ax1.yaxis.set_major_locator(ticker.MultipleLocator(1.00))
-#ax1.yaxis.set_minor_locator(ticker.MultipleLocator(0.25))
-#ax1.yaxis.set_major_formatter(ticker.NullFormatter())
-#ax1.yaxis.set_minor_formatter(ticker.NullFormatter())
-#
-#setup(ax2)
-#ax2.xaxis.set_major_locator(ticker.MultipleLocator(1.00))
-#ax2.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
-#ax2.xaxis.set_major_formatter(ticker.NullFormatter())
-#ax2.xaxis.set_minor_formatter(ticker.NullFormatter())
 
 #while (cap.isOpened()):  # play the video by reading frame by frame
 while(True):
@@ -157,7 +115,6 @@ while(True):
         hist_values = [np.mean(histr[100:-1]),np.std(histr[100:-1]),np.sum(histr[100:-1])]
         globals()[str(colours[i]) + "_frame_hist_values"]= np.append(globals()[str(colours[i]) + "_frame_hist_values"],hist_values)
         globals()[str(colours[i]) + "_frame_hist"] = np.append((globals()[str(colours[i]) + "_frame_hist"]),histr)
-        test = col +'_try'
         
         #####The same for the equalized histogram
         img = equalizeHistColor(frame)
@@ -170,26 +127,6 @@ while(True):
 
     plt.draw()
         
-    #this splits into 3 np arrays, one for each r,g,b channel
-#        split_into_rgb_channels(frame)
-#        frame1 = equalizeHistColor(frame)
-    
-    # Add frame # to the appropriate structures - Trigger_Start Trigger_Stop are either 1 (green) or 2 (blue), Trigger state_state can also be 0 (neither green nor blue)
-    # List of [frame + start event trigger] (where the max[index] = corresponds with the last EEG event)
-#        if count > start_flash:
-#            if b_frame_hist[(count)]
-#            Trigger_Start = []:
-#                
-#            # List of [frame + end event trigger]
-#            if Trigger_Stop = []
-#            # List of [frame + trigger state] (0 B + G channels below thresholds, 1 above B channel threshold, 2 above R channel threshold
-#            Tigger_State[count] = 
-#            else    
-##            
-#        writer.write(img)  # save the frame into video file
-    
-#        if count % 500 == 0: # every 10th frame, show frame
-#            cv2.imshow('Original', frame)  # show the original frame
     cv2.imshow('Original', frame) #show the new frame
     cv2.imshow('Equalized Histogram',img)
     #count += 1

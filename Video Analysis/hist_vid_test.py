@@ -85,6 +85,29 @@ for i, col in enumerate(colours):
 for i, col in enumerate(colours):
     globals()[str(colours[i]) + "_norm_frame_hist_values"] = np.zeros((1,3))
 
+#setup(ax1)
+#ax1.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
+#ax1.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+#
+#ax1.xaxis.set_major_formatter(ticker.FixedFormatter(majors))
+#minors = [""] + ["%.2f" % (x-int(x)) if (x-int(x))
+#                 else "" for x in np.arange(0, 5, 0.25)]
+#ax1.xaxis.set_minor_formatter(ticker.FixedFormatter(minors))
+#ax1.text(0.0, 0.1, "FixedFormatter(['', '0', '1', ...])",
+#        fontsize=15, transform=ax1.transAxes)
+#
+#setup(ax2)
+#ax2.xaxis.set_major_locator(ticker.MultipleLocator(1.0))
+#ax2.xaxis.set_minor_locator(ticker.MultipleLocator(0.25))
+#majors = ["", "0", "1", "2", "3", "4", "5"]
+#ax2.xaxis.set_major_formatter(ticker.FixedFormatter(majors))
+#minors = [""] + ["%.2f" % (x-int(x)) if (x-int(x))
+#                 else "" for x in np.arange(0, 5, 0.25)]
+#ax2.xaxis.set_minor_formatter(ticker.FixedFormatter(minors))
+#ax2.text(0.0, 0.1, "FixedFormatter(['', '0', '1', ...])",
+#        fontsize=15, transform=ax2.transAxes)
+#ax2.yaxis.set
+
 cap = cv2.VideoCapture(0)
 fig, (ax1,ax2) = plt.subplots(2, sharex=True)
 ax1 = fig.add_subplot(2,1,1)
