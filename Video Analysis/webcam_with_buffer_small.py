@@ -49,10 +49,11 @@ def Buffer_update(iii):
 # %%
 plt.ion()
 colours = ['b','g','r']
-
+kernel = np.ones((5,5), np.uint8)
+thresh = 20 # range that binary masks are derived from
 main_dict = {0:'frame_hist_',1:'norm_frame_hist_'}
 buff_size = 10
-col_dict = {b:[0,255,255],g:[60,255,255],r:[120,255,255]}
+col_dict = {'b':[0,255,255],'g':[60,255,255],'r':[120,255,255]} #HSV values
 d0={'frame_hist_current': np.zeros((3,256)),' test': np.zeros((3,256))}
 d1={'norm_frame_hist_current': np.zeros((3,256)),' test': np.zeros((3,256))}
 for i in range(buff_size):
@@ -64,14 +65,10 @@ for i in range(len(main_dict)):
         globals()['d' + str(i)][str(colours[iii]) + "_summary"] = np.zeros((buff_size,3))
 count = 0
 
+for i, col in enumerate(colours):
+    col_dict[str(col) + '_threshold'] = np.matrix([col_dict[str(col)][0] - thresh, col_dict[str(col)][1] - thresh, col_dict[str(col)][1] - thresh])
+    col_dict[str(col) + '_threshold'] = np.append(col_dict[str(col) + '_threshold'],np.matrix([col_dict[str(col)][0] + thresh, col_dict[str(col)][1] + thresh, col_dict[str(col)][1] + thresh]),axis=0)
 
-for i, col in enumerate(colours)
-    col_dict[globals()[str(colours[i]) + '_threshold' = col_dict[globals()[str(colours[i])]]
-    thresh = 20
-    minBGR = np.array([bgr[0] - thresh, bgr[1] - thresh, bgr[2] - thresh])
-    maxBGR = np.array([bgr[0] + thresh, bgr[1] + thresh, bgr[2] + thresh])  
-    maskBGR = cv2.inRange(bright,minBGR,maxBGR)
-    resultBGR = cv2.bitwise_and(bright, bright, mask = maskBGR)
 # %% Define Event Lists
 Trigger_Start = [0] # List of [frame + start event trigger] (where the max[index] = corresponds with the last EEG event)
 Trigger_Stop = [0] # List of [frame + end event trigger]
@@ -86,7 +83,7 @@ fig, (ax1,ax2) = plt.subplots(2, sharex=True)
 ax1 = fig.add_subplot(2,1,1)
 ax2 = fig.add_subplot(2,1,2)
 title = ax1.set_title("My plot", fontsize='large')
-sum_max_thresh = 100
+sum_max_thresh = 100 # set this as the value 2 SD above baseline? - different for each channel?
 # %% Start cycling through frames
 while(True): 
     change = 0
@@ -150,95 +147,61 @@ while(True):
             Trigger_Stop.append(count)
     
     if change != 0:
-#        lower = [1, 0, 20]
-#        upper = [60, 40, 200]
 #        lower = np.array(lower, dtype="uint8")
 #        upper = np.array(upper, dtype="uint8")
-#        
-#        mask = cv2.inRange(image, lower, upper)
-#        output = cv2.bitwise_and(image, image, mask=mask)
-#        ret,thresh = cv2.threshold(mask, 40, 255, 0)
-#        im2,contours,hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        # define range of blue color in HSV
-        lower_blue = np.array([110,50,50])
-        upper_blue = np.array([130,255,255])
-    
-        # Threshold the HSV image to get only blue colors
-        mask = cv2.inRange(hsv, lower_blue, upper_blue)
-    
+        # Threshold the HSV image to get only 'change' color band
+        mask = cv2.inRange(hsv,col_dict[globals()[colours[change] + '_threshold']][0,:],col_dict[globals()[colours[change] + '_threshold']][1,:])
+
         # Bitwise-AND mask and original image
         res = cv2.bitwise_and(frame,frame, mask= mask)
+        
+        #second version with mask erosion and dilation
+        mask2=mask
+        res2 = cv2.bitwise_and(frame,frame, mask= mask2)
+        img_erosion = cv2.erode(mask2, kernel, iterations=1)
+        img_dilation = cv2.dilate(mask2, kernel, iterations=1)
     
-        cv2.imshow('frame',frame)
         cv2.imshow('mask',mask)
-        cv2.imshow('res',res)
+        cv2.imshow('mask2',mask2)
+        cv2.imshow('res',res) # plots mask and original image
+        cv2.imshow('res',res) # plots eroded & dilated mask on the original image
         k = cv2.waitKey(5) & 0xFF
         if k == 27:
             break
             
-        green = np.uint8([[[0,255,0 ]]])
-        hsv_green = cv2.cvtColor(green,cv2.COLOR_BGR2HSV)
-        print('green hsv = {}'.format(hsv_green))
-        [[[ 60 255 255]]]
+
+
+        contours,hierarchy = cv2.findContours(res, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         
-        red = np.uint8([[[255,0,0 ]]])
-        hsv_red = cv2.cvtColor(red,cv2.COLOR_BGR2HSV)
-        print('red hsv = ' + hsv_red)
+        if len(contours) != 0:
+            # draw in blue the contours that were founded
+            cv2.drawContours(res, contours, -1, (255,0,0), 3)
         
-        blue = np.uint8([[[0,0,255]]])
-        hsv_blue = cv2.cvtColor(blue,cv2.COLOR_BGR2HSV)
-        print('blue hsv = ' + hsv_blue)
+            #find the biggest area
+            c = max(contours, key = cv2.contourArea)
         
+            x,y,w,h = cv2.boundingRect(c)
+            # draw the book contour (in green)
+            cv2.rectangle(res,(x,y),(x+w,y+h),(0,255,0),2)
+            
+        contours2,hierarchy2 = cv2.findContours(res, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+            
+        if len(contours) != 0:
+            # draw in blue the contours that were founded
+            cv2.drawContours(res2, contours, -1, (255,0,0), 3)
         
+            #find the biggest area
+            c = max(contours2, key = cv2.contourArea)
         
-#        # red color boundaries (R,B and G)
-#        lower = [1, 0, 20]
-#        upper = [60, 40, 200]
-#        
-#        # create NumPy arrays from the boundaries
-#        lower = np.array(lower, dtype="uint8")
-#        upper = np.array(upper, dtype="uint8")
-#        
-#        # find the colors within the specified boundaries and apply
-#        # the mask
-#        mask = cv2.inRange(img1, lower, upper)
-#        output = cv2.bitwise_and(img1, img1, mask=mask)
-#        
-#        ret,thresh = cv2.threshold(mask, 40, 255, 0)
-#        contours,hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-#        
-#        if len(contours) != 0:
-#            # draw in blue the contours that were founded
-#            cv2.drawContours(output, contours, -1, 255, 3)
-#        
-#            #find the biggest area
-#            c = max(contours, key = cv2.contourArea)
-#        
-#            x,y,w,h = cv2.boundingRect(c)
-#            # draw the book contour (in green)
-#            cv2.rectangle(output,(x,y),(x+w,y+h),(0,255,0),2)
+            x2,y2,w2,h2 = cv2.boundingRect(c)
+            # draw the book contour (in green)
+            cv2.rectangle(res2,(x2,y2),(x2+w2,y2+h2),(0,255,0),2)
 #        
 #        cv2.imshow("Result", np.hstack([img1, output]))
-#        
-#        
-        
-        
-        
-#        imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#        ret, thresh = cv2.threshold(imgray, 127, 255, 0)
-#        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-#        c = max(contours, key = cv2.contourArea)
-#        x,y,w,h = cv2.boundingRect(c)
-#        cv2.rectangle(imgray,(x,y),(x+w,y+h),(0,255,0),2)
-##        cv2.drawContours(im, c, -1, (0,255,0), 3)
-#        cv2.imshow('',imgray)
-#        cv2.waitKey(10)
 
-    
-        
 #        if len(contours) != 0:
 #        for c in contours:
 #            rect = cv2.boundingRect(c)
@@ -252,11 +215,10 @@ while(True):
 #    else:
 #        img5=img2
         
-# Display the original & resulting image
-#    cv2.imshow('binary ', )
-#    cv2.imshow('', )
-#    cv2.imshow('', )
+# Display the original & resulting images
 #    cv2.imshow('Change Detected', )
+    cv2.imshow('res',res) # original image with mask + contours drawn + max contour bounded
+    cv2.imshow('res',res2) # original image with erosion/dilation mask + contours drawn + max contour bounded
     cv2.imshow('Original', frame)
     cv2.imshow('Histogram Equalization',img)
     if cv2.waitKey(200) & 0xFF == ord('q'):  # press q to quit
