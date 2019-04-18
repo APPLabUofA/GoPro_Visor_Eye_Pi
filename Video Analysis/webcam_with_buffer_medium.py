@@ -74,12 +74,12 @@ while(True):  # Capture frame-by-frame
     count += 1
     for iii,col in enumerate(colours):
 
-        hist = np.array([cv2.calcHist([frame],[i],None,[256],[0,256])])
+        hist = np.array([cv2.calcHist([frame],[iii],None,[256],[0,256])])
         hist = np.squeeze(hist, axis=(2))
         print('debug')
         img = equalizeHistColor(frame)
 
-        hist_norm = cv2.calcHist([img],[i],None,[256],[0,256])
+        hist_norm = cv2.calcHist([img],[iii],None,[256],[0,256])
         hist_norm = hist_norm.reshape(1,-1)
         print('debug')
         

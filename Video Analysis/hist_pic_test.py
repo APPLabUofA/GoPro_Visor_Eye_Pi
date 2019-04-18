@@ -39,11 +39,15 @@ for i,col in enumerate(colours):
     globals()[str(colours[i]) + "_frame_hist"][(0,2)] = np.sum(histr[100:-1])
     img2 = equalizeHistColor(img)
     histr_norm = cv2.calcHist([img2],[i],None,[256],[0,256]) 
+    globals()[str(colours[i]) + "_frame_hist_data_norm"] = histr_norm
     plt.plot(histr,color = col)
     ax1.plot(histr,color = col)
     ax2.plot(histr_norm, color = col)
     plt.xlim([0,256])
     plt.show()
+    cv2.imshow('',img)
+    cv2.imshow('',img2)
+    cv2.waitKey(0)
     
     
 
