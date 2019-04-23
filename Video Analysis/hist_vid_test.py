@@ -20,7 +20,7 @@ Tigger_State = []
 Trigger_Epoch = []
 
 
-webcam = 1 # set to 1 if input is a webcam
+webcam = 0 # set to 1 if input is a webcam
 exp = 1
 path = 'M:\\Data\\GoPro_P3_...Latency\\Videos\\'
 part = '011' # Version - example '001' or '054'
@@ -66,7 +66,7 @@ def equalizeHistColor(frame):
 
 
 # %% Loop through frames
-cap = cv2.VideoCapture(0)  # load the video
+cap = cv2.VideoCapture(in_file)  # load the video
 #post_frame = cap.get(1) # CV_CAP_PROP_POS_FRAMES #0-based index of the frame to be decoded/captured next
 #count = 0 # which frame
 #length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))

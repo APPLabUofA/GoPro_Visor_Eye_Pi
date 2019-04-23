@@ -49,11 +49,15 @@ def Buffer_update(iii):
 # %%
 plt.ion()
 colours = ['b','g','r']
+col_name = ['blue','green','red']
 kernel = np.ones((5,5), np.uint8)
-thresh = 20 # range that binary masks are derived from
+thresh = 10 # range that binary masks are derived from
+thresh2 = 40 # take a more specific range of hsv values
+sum_max_thresh = 100 # set this as the value 2 SD above baseline? - different for each channel? - seperate cahnnel weighting so max is reflective of baseline change
 main_dict = {0:'frame_hist_',1:'norm_frame_hist_'}
 buff_size = 10
-col_dict = {'b':[0,255,255],'g':[60,255,255],'r':[120,255,255]} #HSV values
+col_dict = {'b_hsv':np.array((0,255,255),dtype=np.uint8),'g_hsv':np.array((60,255,255),dtype=np.uint8),'r_hsv':np.array((120,255,255),dtype=np.uint8),'b_bgr':[255,0,0],'g_bgr':[0,255,0],'r_bgr':[0,0,255]} #HSV values
+
 d0={'frame_hist_current': np.zeros((3,256)),' test': np.zeros((3,256))}
 d1={'norm_frame_hist_current': np.zeros((3,256)),' test': np.zeros((3,256))}
 for i in range(buff_size):
@@ -65,9 +69,13 @@ for i in range(len(main_dict)):
         globals()['d' + str(i)][str(colours[iii]) + "_summary"] = np.zeros((buff_size,3))
 count = 0
 
-for i, col in enumerate(colours):
-    col_dict[str(col) + '_threshold'] = np.matrix([col_dict[str(col)][0] - thresh, col_dict[str(col)][1] - thresh, col_dict[str(col)][1] - thresh])
-    col_dict[str(col) + '_threshold'] = np.append(col_dict[str(col) + '_threshold'],np.matrix([col_dict[str(col)][0] + thresh, col_dict[str(col)][1] + thresh, col_dict[str(col)][1] + thresh]),axis=0)
+for i, col in enumerate(colours): # broad values
+    col_dict[str(col) + '_low_thresh_bro'] = np.array([col_dict[str(col) + '_hsv'][0] - thresh, 50, 50])
+    col_dict[str(col) + '_high_thresh_bro'] = np.array([col_dict[str(col) + '_hsv'][0] + thresh, 255, 255])
+#
+for i, col in enumerate(colours): # specific values
+    col_dict[str(col) + '_low_thresh_spe'] = np.array((col_dict[str(col) + '_hsv'][0] - thresh2, col_dict[str(col) + '_hsv'][1] - thresh2*3, col_dict[str(col) + '_hsv'][2] - thresh2*3))
+    col_dict[str(col) + '_high_thresh_spe'] = np.array((col_dict[str(col) + '_hsv'][0] + thresh2, col_dict[str(col) + '_hsv'][1] + thresh2, col_dict[str(col) + '_hsv'][2] + thresh2))
 
 # %% Define Event Lists
 Trigger_Start = [0] # List of [frame + start event trigger] (where the max[index] = corresponds with the last EEG event)
@@ -76,44 +84,95 @@ Trigger_State = np.zeros((1,2)) # List of [frame + trigger state] (0 B + G chann
 # Second Pass for extracting epochs based off first pass - figure out later
 Trigger_Epoch = [] # Eventually will output an ~[-1,1] video epoch to be the raw input for deep learning
 summy_summary = np.zeros((1,3))
+
+
+webcam = 1 # set to 1 if input is a webcam
+exp = 1
+path = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\\'
+part = '011' # Version - example '001' or '054'
+par = 11
+exp = 'GOPR0212' # ex. '003_camera_p3'
+in_format = '.avi'
+in_file = path + part + exp + in_format
+
+if webcam == 1:
+    in_file = 0
+
+# for debugging purposes
+in_file = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\GOPR0212.avi'
+
+# %% # Are we saving an output file (file with overlaid filters/bounders/manipulations)?
+ # # Version - example '001' or '054'
+out_format = '.avi'
+out_file = part + exp + out_format
+
+# Output file parameter
+imgSize=(848,480) # likely best to set to original  dimensions
+frame_per_second=240.0
+out = cv2.VideoWriter(out_format, cv2.VideoWriter_fourcc(*"MJPG"), frame_per_second,imgSize,False)
+
+# %% Load in participant specific info - frame number of events
+if exp == 1: # original exp (2018)
+    start_eeg = [0,0,652,3041,3330,567,1045,2053,616,1443,638]
+    door_closed = [0,0,4800,6947,12240,5040,7440,7680,6000,8640,8400]
+    start_flash = [0,0,8897,12159,17668,10446,12567,12673,11040,13343,13176]
+elif exp == 2: # new data (2019)
+    pass
+
 # %% Initialize Plots
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(in_file)
+if webcam == 0:
+    cap.set(cv2.CAP_PROP_POS_FRAMES, start_eeg[par-1]-1)
+    nums_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+#    cap.set()
+    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 plt.ion()
 fig, (ax1,ax2) = plt.subplots(2, sharex=True)
 ax1 = fig.add_subplot(2,1,1)
 ax2 = fig.add_subplot(2,1,2)
 title = ax1.set_title("My plot", fontsize='large')
-sum_max_thresh = 100 # set this as the value 2 SD above baseline? - different for each channel?
+
+plt.tick_params(
+    axis='x',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    labelbottom=False) # labels along the bottom edge are off
+
 # %% Start cycling through frames
 while(True): 
+    
     change = 0
     ax1.clear()
     ax2.clear()
     ret, frame = cap.read()        
     count += 1
+    
+    
     for iii,col in enumerate(colours):
+        
+        hsv_im = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         hist = np.array([cv2.calcHist([frame],[iii],None,[256],[0,256])])
         hist = np.squeeze(hist, axis=(2))
-        print('debug')
+        
         img = equalizeHistColor(frame)
         img1 = img
 
         hist_norm = cv2.calcHist([img],[iii],None,[256],[0,256])
         hist_norm = hist_norm.reshape(1,-1)
-        print('debug')
         
-        if count > buff_size:
-            
+        if count > buff_size: 
             Buffer_update(iii)
         else:   
             Buffer_init(iii)
         
-        print('debug')
+        # This doesn't quite work yet, refer to 'hist_vid_test - Copy.py'
+        ax1.plot(hist,color = col)
+        ax2.plot(hist_norm, color = col)
         
-        ax1.plot(hist[100:256], color = col)
-        ax2.plot(hist_norm[100:256], color = col)
-    fig.canvas.draw()
+    plt.draw()
     # Calculate if there was a change
     if count > buff_size:
         for i in range(len(main_dict)):
@@ -141,89 +200,49 @@ while(True):
         Trigger_State = np.append(Trigger_State, np.matrix((count,0)),axis=0)
     
     if count > 1:    
-        if int(Trigger_State[count][0,1]) != 0 & int(Trigger_State[count-1][0,1]) == 0:
+        if int(Trigger_State[count][0,1]) == 0 & int(Trigger_State[count-1][0,1]) != 0:
             Trigger_Start.append(count)
         elif int(Trigger_State[count][0,1]) != 0 & int(Trigger_State[count-1][0,1]) == 0:
             Trigger_Stop.append(count)
     
     if change != 0:
-#        lower = np.array(lower, dtype="uint8")
-#        upper = np.array(upper, dtype="uint8")
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        maskHSV = cv2.inRange(hsv_im, col_dict[str(col) + '_low_thresh_spe'], col_dict[str(col) + '_high_thresh_spe'])
+        resultHSV = cv2.bitwise_and(hsv_im, hsv_im, mask = maskHSV)
+        cv2.imshow("Result HSV", resultHSV)
 
-        # Threshold the HSV image to get only 'change' color band
-        mask = cv2.inRange(hsv,col_dict[globals()[colours[change] + '_threshold']][0,:],col_dict[globals()[colours[change] + '_threshold']][1,:])
-
-        # Bitwise-AND mask and original image
-        res = cv2.bitwise_and(frame,frame, mask= mask)
-        
-        #second version with mask erosion and dilation
-        mask2=mask
-        res2 = cv2.bitwise_and(frame,frame, mask= mask2)
-        img_erosion = cv2.erode(mask2, kernel, iterations=1)
-        img_dilation = cv2.dilate(mask2, kernel, iterations=1)
-    
-        cv2.imshow('mask',mask)
-        cv2.imshow('mask2',mask2)
-        cv2.imshow('res',res) # plots mask and original image
-        cv2.imshow('res',res) # plots eroded & dilated mask on the original image
-        k = cv2.waitKey(5) & 0xFF
-        if k == 27:
-            break
-            
-
-
-        contours,hierarchy = cv2.findContours(res, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        img2 = cv2.addWeighted(frame,0.9,resultHSV,0.1,0)
+#        cv2.imshow('addweight',img2)
+        imgray = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+#        cv2.imshow('grey',imgray)
+        dilation = cv2.dilate(imgray,kernel,iterations = 7)
+#        cv2.imshow('dilation7',dilation)
+        ret, thresh = cv2.threshold(dilation, 100, 255, 0)
+#        cv2.imshow('threshold',thresh)
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
         if len(contours) != 0:
-            # draw in blue the contours that were founded
-            cv2.drawContours(res, contours, -1, (255,0,0), 3)
-        
-            #find the biggest area
-            c = max(contours, key = cv2.contourArea)
-        
-            x,y,w,h = cv2.boundingRect(c)
-            # draw the book contour (in green)
-            cv2.rectangle(res,(x,y),(x+w,y+h),(0,255,0),2)
+            for c in contours:
+                rect = cv2.boundingRect(c)
+                height, width = img2.shape[:2]            
+        #        if rect[2] > 0.2*height and rect[2] < 0.7*height and rect[3] > 0.2*width and rect[3] < 0.7*width: 
+                x,y,w,h = cv2.boundingRect(c)            # get bounding box of largest contour
+                img4 = cv2.drawContours(img2, c, -1, (255,255,255), 2)
+                img5 = cv2.rectangle(img2,(x,y),(x+w,y+h),(0,0,255),2)  # draw red bounding box in img
             
-        contours2,hierarchy2 = cv2.findContours(res, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-            
-        if len(contours) != 0:
-            # draw in blue the contours that were founded
-            cv2.drawContours(res2, contours, -1, (255,0,0), 3)
         
-            #find the biggest area
-            c = max(contours2, key = cv2.contourArea)
-        
-            x2,y2,w2,h2 = cv2.boundingRect(c)
-            # draw the book contour (in green)
-            cv2.rectangle(res2,(x2,y2),(x2+w2,y2+h2),(0,255,0),2)
-#        
-#        cv2.imshow("Result", np.hstack([img1, output]))
-
-#        if len(contours) != 0:
-#        for c in contours:
-#            rect = cv2.boundingRect(c)
-#            height, width = img2.shape[:2]            
-#            if rect[2] > 0.2*height and rect[2] < 0.7*height and rect[3] > 0.2*width and rect[3] < 0.7*width: 
-#                x,y,w,h = cv2.boundingRect(c)            # get bounding box of largest contour
-#                img4=cv2.drawContours(img2, c, -1, color, thickness)
-#                img5 = cv2.rectangle(img2,(x,y),(x+w,y+h),(0,0,255),2)  # draw red bounding box in img
-#            else:
-#                img5=img2
-#    else:
-#        img5=img2
-        
+        cv2.putText(img5, col_name[change], (x, y+h), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), lineType=cv2.LINE_AA) 
+        cv2.imshow('',img5)  
+        out.write(img5)
 # Display the original & resulting images
 #    cv2.imshow('Change Detected', )
-    cv2.imshow('res',res) # original image with mask + contours drawn + max contour bounded
-    cv2.imshow('res',res2) # original image with erosion/dilation mask + contours drawn + max contour bounded
+    last_frame = hsv_im # make the current frame = to last_frame for drawing in the next iteration
     cv2.imshow('Original', frame)
     cv2.imshow('Histogram Equalization',img)
-    if cv2.waitKey(200) & 0xFF == ord('q'):  # press q to quit
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):  # press q to quit
         break
         
 # When everything done, release the capture
+out.release()
 cap.release()
 cv2.destroyAllWindows()
