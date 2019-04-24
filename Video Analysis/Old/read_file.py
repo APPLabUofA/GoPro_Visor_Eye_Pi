@@ -33,10 +33,10 @@ for i, col in enumerate(colours):
 
 webcam = 0 # set to 1 if input is a webcam
 exp = 1
-path = 'M:\\Data\\GoPro_P3_...Latency\\Videos\\'
+path = 'M:\\Data\\GoPro_Visor\\GoPro_Video\\Pilot_1\\GOPRO0212' # M:\Data\GoPro_Visor\GoPro_Video\Pilot_1\GOPR0212
 part = '011' # Version - example '001' or '054'
 exp = '_camera_p3' # ex. '003_camera_p3'
-in_format = '.avi'
+in_format = '.MP4'
 in_file = path + part + exp + in_format
 
 if webcam == 1:
@@ -87,10 +87,11 @@ def setup(ax):
     ax.patch.set_alpha(0.0)
 # %% Loop through frames
 cap = cv2.VideoCapture(in_file)  # load the video
-#post_frame = cap.get(1) # CV_CAP_PROP_POS_FRAMES #0-based index of the frame to be decoded/captured next
+post_frame = cap.get(1) # CV_CAP_PROP_POS_FRAMES #0-based index of the frame to be decoded/captured next
 #count = 0 # which frame
-#length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-#
+length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+cap.set(cv2.CAP_PROP_POS_FRAMES, 637)
+frame_number = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 
 plt.ion()
 fig, (ax1,ax2) = plt.subplots(2, sharex=True)
@@ -140,3 +141,44 @@ while(True):
 writer.release()
 cap.release()
 cv2.destroyAllWindows()
+
+
+
+
+
+
+
+# Create a VideoCapture object and read from input file 
+cap = cv2.VideoCapture('C:\\Users\\Public\\Videos\\Sample Video\\Wildlife.wmv')
+cap = cv2.VideoCapture('M:\\Data\\GoPro_Visor\\Converted_Video\\003_setup.avi')
+cap = cv2.VideoCapture('M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\\GOPR0212.avi')
+   
+# Check if camera opened successfully 
+if (cap.isOpened()== False):  
+  print("Error opening video  file") 
+   
+# Read until video is completed 
+while(cap.isOpened()): 
+      
+  # Capture frame-by-frame 
+  ret, frame = cap.read() 
+  if ret == True: 
+   
+    # Display the resulting frame 
+    cv2.imshow('Frame', frame) 
+   
+    # Press Q on keyboard to  exit 
+    if cv2.waitKey(25) & 0xFF == ord('q'): 
+      break
+   
+  # Break the loop 
+  else:  
+    break
+   
+# When everything done, release  
+# the video capture object 
+cap.release() 
+   
+# Closes all the frames 
+cv2.destroyAllWindows() 
+
