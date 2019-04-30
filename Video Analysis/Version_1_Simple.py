@@ -32,7 +32,7 @@ def findEdges(last_frame, centre_frame):
                 state_change = True
             else:
                 state_change = False
-            if abs(last_frame - current_frame) < 2 & last_state_change == state_change:
+            if abs(centre_frame - current_frame) < 2 & last_state_change == state_change:
                 edge.append(current_frame)
                 detect = True
             last_state_change = state_change
