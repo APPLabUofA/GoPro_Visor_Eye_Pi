@@ -5,10 +5,15 @@ from threading import Thread, Timer
 import time
 import pigpio
 import RPi.GPIO as GPIO
+import numpy as np
 
 screen_res = 100,200
 
 frame_state = [] # array of frame state
+
+partnum = input("partnum: ")
+filename = 'visual_p3_video'
+
 
 trig_pins = [4,17,27,22,5,6,13,19]
 resp_pin = 21
@@ -77,14 +82,18 @@ class Stream (Thread): # construct - not an object - creat object and call Threa
 
     def run(self):
         cap = cv2.VideoCapture(self.file)
-        while True:
+        self.length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        ret = True
+        while ret == True:
 #            timer = Timer(self.frame_latency, lambda: raise EndFrameFlag) # start time that will wait one frame duration - then throws error
 #            timer.start()
+
             self.frame_start = time.time() - self.start_time 
             if self.frame_start < (self.frame+1)*self.frame_latency:
-            
                 # Capture frame-by-frame
                 ret, frame = cap.read()  # ret = 1 if the video is captured; frame is the image
+                if self.frame == self.length + 1:
+                    break
                 self.time = time.time() - self.start_time # gets the time of a given frame from the begining of the first frame
                 # Display the resulting image
                 cv2.imshow('Video', frame)
@@ -96,8 +105,10 @@ class Stream (Thread): # construct - not an object - creat object and call Threa
             self.frame += 1
 
         # When everything done, release the capture
+        np.savetxt(filename_part, (frame_state), delimiter=',',fmt="%s")
         cap.release()
         cv2.destroyAllWindows()
+        
 
 class Frame_Trigger (Thread):
     def __init__(self, Stream_other): # pulls both time and state into itself as per being defined in the initial state machine
@@ -113,20 +124,27 @@ class Frame_Trigger (Thread):
                 state = 0
                 toggle = 1
             else:
+                state = 0
                 if toggle == 1:
                     GPIO.output(pi2trig(16),1)
                     print(self.time)
                     state = 1 # state_frame on
                     time.sleep(trig_gap)
                     GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
-                toggle = 0 
+##                    print(frame_state)
+                toggle = 0
             append_frame_state(frame_state, self.frame, state)
             time.sleep(0.001)
-            
+        
+filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/Pi3_Amp_Latencies/Video/" + partnum + "_" + filename + ".csv")
+           
 
 ##########################################
 # %% Threading of experiment itself to deal with systemic jitter an messy timings
             
-if __name__ == '__main__':
+if __name__ == '__main__':      
     stream = Stream() # initialize stream
     stream.start() # runs the run() method
+
+
+
