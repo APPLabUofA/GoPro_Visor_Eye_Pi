@@ -259,12 +259,12 @@ while(True):
 
 #        img2 = cv2.addWeighted(frame,0.9,resultHSV,0.1,0)
 #        cv2.imshow('addweight',img2)
-        imgray = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        imgray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 #        cv2.imshow('grey',imgray)
         dilation = cv2.dilate(imgray,kernel,iterations = 7)
         blur = cv2.GaussianBlur(dilation,(21,21),0) # take out if dilation is high?
 #        cv2.imshow('dilation7',dilation)
-        ret, thresh = cv2.threshold(blur, 100, 255, 0)
+        ret, thresh = cv2.threshold(blur, 50, 255, 0)
 #        cv2.imshow('threshold',thresh)
         contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         
