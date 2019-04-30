@@ -12,7 +12,34 @@ def equalizeHistColor(frame):
     img[:,:,2] = cv2.equalizeHist(img[:,:,2])     # equalize the histogram of the V channel
     return cv2.cvtColor(img, cv2.COLOR_HSV2RGB)   # convert the HSV image back to RGB format
 
-
+def findEdges(last_frame, centre_frame):
+    front_back = 1
+    edge = []
+    while front_back >= -1:
+        last_state_change = True
+        direction = -1 * front_back # wondow direction - -1 = leftward, 1 = rightward
+        i = 1
+        detect = False
+        while detect == False:
+            jump = 100/(2*i) 
+            current_frame  = centre_frame + jump*direction
+            cap.set(1,current_frame)
+            ret, frame = cap.read() 
+            frame1 = frame[240:480,212:636,:]
+            diff = cv2.absdiff(frame1,last_frame)
+            if np.sum(diff) >= broad_thresh:
+                direction = -1 * direction
+                state_change = True
+            else:
+                state_change = False
+            if abs(last_frame - current_frame) < 2 & last_state_change == state_change:
+                edge.append(current_frame)
+                detect = True
+            last_state_change = state_change
+            centre_frame = current_frame
+            i += 1
+        front_back -= 2
+    
 # %%
 plt.ion()
 colours = ['b','g','r']
@@ -189,7 +216,9 @@ while(True):
         else:
             if full_video == 1:
                 out.write(img1)
-                
+        
+        findEdges(frame, frame_number)
+        cap.set(1,frame_number)
                 
 # Display the original & resulting images
 #    cv2.imshow('Change Detected', )

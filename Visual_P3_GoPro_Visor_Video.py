@@ -209,24 +209,13 @@ pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write
 # Render screen and fixation cross
 
 ############################################################## The following is for an integrated Video display
-##### Seperate Thread
-##### Will have to define a class that we update up (15) every 1 second & (16) 24 frames,
-# then outside of thread we will check both 15/16 each iteration (confirm this doesn't add more time)
-# does this mean another public thread?
 
-class EndFrameFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
-    pass
-
-class EndFrameUpdateFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
-    pass
-
-class Stream (Thread): # construct - not an object
+class Stream (Thread): # construct - not an object - creat object and call Thread (spinning + running thread)
     def __init__(self):
         Thread.__init__(self)
         self.frame = 0 # if I want to pass this attrivute I have to pass the entire class to the other object/class
         self.time = 0
         self.file = 0 ### Change video input - should be in string format
-        self.start_time = time.time() # time since the begining of the first frame
         self.frame_time = 0 # time since the begining of the current frame being draw
 
         cap = cv2.VideoCapture(self.file)
@@ -239,17 +228,16 @@ class Stream (Thread): # construct - not an object
 
         self.trig = Frame_Trigger(self)
         self.trig.start()
-        self.pin = Pin_Off(self, self.trig)
-        self.pin.start()
+        self.start_time = time.time()
 
     def run(self):
         cap = cv2.VideoCapture(self.file)
-        self.start_time = time.time()
         while True:
-            timer = Timer(self.frame_latency, lambda: raise EndFrameFlag) # start time that will wait one frame duration - then throws error
-            timer.start()
-
-            try:
+#            timer = Timer(self.frame_latency, lambda: raise EndFrameFlag) # start time that will wait one frame duration - then throws error
+#            timer.start()
+            self.frame_start = time.time() - self.start_time 
+            if self.frame_start <= (self.frame+1)*self.frame_latency
+            
                 # Capture frame-by-frame
                 ret, frame = cap.read()  # ret = 1 if the video is captured; frame is the image
                 self.time = time.time() - self.start_time # gets the time of a given frame from the begining of the first frame
@@ -257,21 +245,10 @@ class Stream (Thread): # construct - not an object
                 cv2.imshow('Video', frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):  # press q to quit
                     break
-                # immediately after the frame is drawn then a second timer is started to flash the frame_update for 10 ms
-                frame_timer = Timer(self.frame_update_time, lambda: raise EndFrameUpdateFlag)
-                frame_timer.start()
-
-                try:
-                    self.frame += 1 # counts frame number
-                    self.frame_update = 1
-                    time.sleep(1)
-                except EndFrameUpdateFlag: # allows EndFrameUpdateFlag to pass
-                    pass
-
-                frame_update = 0
-                time.sleep(1)
-            except EndFrameFlag: # allows EndFrameFlag to pass
-                pass
+                
+                time.sleep((time.time() - self.start_time) - (self.frame+1)*self.frame_latency ) # wait till the end start of the next frame
+                
+            self.frame += 1
 
         # When everything done, release the capture
         cap.release()
@@ -286,87 +263,19 @@ class Frame_Trigger (Thread):
         While True:
             self.frame = self.Stream_other.frame
             self.time = Stream_other.time
-            if self.frame % self.frame_rate  == 0: # state_frame off
+            if self.frame % self.frame_rate  != 0: # state_frame off
                 frame_state[self.Frame_State_other.frame] = 0
             else:
                 GPIO.output(pi2trig(16),1)
                 frame_state[self.Frame_State_other.frame] = 1 # state_frame on
                 frame_time.append(self.time)
                 time.sleep(trig_gap)
+                GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
             time.sleep(0.001)
         return frame_state
 
-class Pin_Off (Thread, Frame_Trigger_other):
-    def __init__(self, Stream_other):
-        Thread.__init__(self)
-        self.Stream_other = Stream_other
-    def run(self)
-        while True:
-            if self.Stream_other.frame_update == 1:
-                self.trig_other.change = 0
-                time.sleep(trig_gap)
-                GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
-            else:
-                time.sleep(0.001)
-                
 ##########################################
 # %% Threading of experiment itself to deal with systemic jitter an messy timings
-
-class ColourTimeFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
-    pass
-
-class TrigTimeFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
-    pass
-
-def Timer_LED(colour):
-    colour_timer = Timer(LED_ON, lambda: raise ColourTimeFlag) # start time that will wait one frame duration - then throws error
-    colour_timer.start()
-    try:
-        pixels.fill(colour)
-        time.sleep(5)
-    except ColourTimeFlag: # allows ColourTimeFlag to pass
-            pass
-    pixels.fill(blank)
-    return
-        
-def Timer_Trig(trig):
-    trig_timer = Timer(trig_gap, lambda: raise TrigTimeFlag) # start time that will wait one frame duration - then throws error
-    trig_timer.start()
-    try:
-        GPIO.output(pi2trig(trig),1)
-        time.sleep(1)
-    except TrigTimeFlag: # allows TrigTimeFlag to pass
-            pass
-    GPIO.output(pi2trig(255),0)
-    return    
-
-class Colour_Switch (Thread):
-    def __init__(self): # pulls both time and state into itself as per being defined in the initial state machine
-        Thread.__init__(self)
-    def run(self):
-        While True:
-            if trig_state == 0
-                time.sleep(0.0001) # 1/10 of a millisecond
-            else:
-                if colour_state = 1:
-                Timer_LED_ON(green)
-                elif colour_state == 2:
-                    Timer_LED(blue)
-                else:
-                    Timer_LED(red)
-                return tc_state
-
-class Trig_Switch (Thread):
-    def __init__(self): # pulls both time and state into itself as per being defined in the initial state machine
-        Thread.__init__(self)
-    def run(self):
-        While True:
-            if trig_state == 0
-                time.sleep(0.0001) # 1/10 of a millisecond
-            else:
-                Timer_Trig(trig_state)
-                tc_state = 0
-                return tc_state 
             
 if __name__ == '__main__':
     refresh_screen()
@@ -380,7 +289,8 @@ if __name__ == '__main__':
         refresh_screen()
         cv2.imshow(window_name, img)
            
-                    
+stream = Stream() # initialize stream
+stream.start() # runs the run() method
 # %% Experiment itself                   
 for block in range(block_num):
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
