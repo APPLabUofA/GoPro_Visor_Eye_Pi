@@ -10,18 +10,33 @@ import pygame
 import cv2
 from threading import Thread, Timer
 
-#Define Window
-screen_res = 1960, 1200
+##Define Window
+screen_res = 100, 200 #1080,1920 
 width = int(screen_res[0]/2) # half width
 height = int(screen_res[1]/2) # half height
 
 #Define Instructions
-instr_1 = 'Focus on central fixation.'
-instr_2 = 'Press the button when you see blue flashes, do NOT press the spacebar when you see green flashes.'
-instr_3 = 'Press the button when you are ready to start.'
-instr_4 = 'Feel free to take a break at this time. Press the button when you are ready to start.'
-instr_5 = 'Congratulations, you have finished the experiment! Please contact the experimenter.'
-instruct = instr_1, instr_2, instr_3, instr_4, instr_5
+instr_0 = 'Press the space bar once to continue'
+instr_1 = 'During the duration of the experiment, focus on central fixation'
+instr_2 = 'Press the button when you see blue flashes'
+instr_3 = 'Do NOT press the button when you see green flashes.'
+instr_4 = 'When you are ready to start, press the space bar and THEN the button.'
+instr_5 = 'Feel free to take a break at this time.'
+instr_6 = 'To continue the experiment, press the space bar and THEN the button.'
+instr_7 = 'Congratulations, you have finished the experiment!'
+instr_8 = 'Please contact the experimenter.'
+
+# Instruct lists for looping 
+Space_Propmt = [instr_0]
+Start_Instruct = [instr_0,instr_1, instr_2, instr_3, instr_4]
+Break_Instruct = [instr_5, instr_6]
+End_Instruct = [instr_7, instr_8]
+
+# Positions of text # Change all these - independent of aspect ratio
+Space_Propmt_Width = [(int(screen_res[1]/3),int(screen_res[1]/3))]
+Start_Instruct_Width = [(int(screen_res[1]/3),int(screen_res[1]/3)),(int(screen_res[1]/5),int(screen_res[1]/3)),(int(screen_res[1]/3),int(screen_res[1]/3)),(int(screen_res[1]/4),int(screen_res[1]/3)),(int(screen_res[1]/6),int(screen_res[1]/3)),(int(screen_res[1]/4),int(screen_res[1]/3))]
+Break_Instruct_Width = [(int(screen_res[1]/3),int(screen_res[1]/3)),(int(screen_res[1]/6),int(screen_res[1]/2))]
+End_Instruct_Width =  [(int(screen_res[1]/4),int(screen_res[1]/3)),(int(screen_res[1]/3),int(screen_res[1]/2))]
 
 ##setup some constant variables##
 partnum = input("partnum: ")
@@ -29,9 +44,6 @@ filename = 'visual_p3_gopro_visor'
 
 ##number of trials##
 trial_num = int(input("How many trials per block?: "))
-
-##number of blocks
-block_num = int(input("How many blocks?: "))
 
 ##standard and target rate##
 standard_rate = 0.8
@@ -168,7 +180,6 @@ def wheel(pos):
         b = int(255 - pos*3)
     return (r, g, b)
 
-
 def rainbow_cycle(wait, rainbow_time):
     start = time.time()
     while time.time() - start < rainbow_time:
@@ -179,10 +190,25 @@ def rainbow_cycle(wait, rainbow_time):
             pixels.show()
             time.sleep(wait)
 
+def append_frame_state(lst, index, state,time):
+    while(index - len(lst) > 1):
+        lst.append([None, time])
+    lst.append([state, time])
+
 def refresh_screen():
     img = np.zeros((screen_res[0],screen_res[1],3), np.uint8) # 1960 X 1200 X 3
     img[width-4:width+4, height-24:height+24, :] = 255
     img[width-50:width+50, height-2:height+2, :] = 255
+    
+def refresh_trig_visor(x): # structure output of CSV
+    trig_type.append(x)
+    delay_length.append(2)
+    trial_resp.append(0)
+    resp_latency.append(0)
+    time.sleep(2) ## leave red on for 2 seconds
+    pixels.fill(blank)
+    GPIO.output(pi2trig(255),0)
+
 ##define the ip address for the second Pi we will be controlling##
 ##pi = pigpio.pi('192.168.1.216')
 
@@ -195,7 +221,6 @@ trig_time   = []
 trig_type = []
 delay_length  = []
 trial_resp = []
-jitter_length = []
 resp_latency = []
 block_start_stop = []
 exp_start_stop = []
@@ -209,69 +234,45 @@ pixels = neopixel.NeoPixel(pin_out, pin_num, brightness = brightness, auto_write
 # Render screen and fixation cross
 
 ############################################################## The following is for an integrated Video display
-##### Seperate Thread
-##### Will have to define a class that we update up (15) every 1 second & (16) 24 frames,
-# then outside of thread we will check both 15/16 each iteration (confirm this doesn't add more time)
-# does this mean another public thread?
-
-class EndFrameFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
-    pass
-
-class EndFrameUpdateFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
-    pass
-
-class Stream (Thread): # construct - not an object
+class Stream (Thread): # construct - not an object - creat object and call Thread (spinning + running thread)
     def __init__(self):
         Thread.__init__(self)
         self.frame = 0 # if I want to pass this attrivute I have to pass the entire class to the other object/class
         self.time = 0
-        self.file = 0 ### Change video input - should be in string format
-        self.start_time = time.time() # time since the begining of the first frame
+        self.file = '/home/pi/GitHub/GoPro_Visor_Eye_Pi/003_setup.avi' ### Change video input - should be in string format
         self.frame_time = 0 # time since the begining of the current frame being draw
 
         cap = cv2.VideoCapture(self.file)
-        self.frame_rate = get(cv2.CAP_PROP_FPS)
-        #self.frame_rate = 24  # can enforce the frame rate - using EndFrameFlag
-
+##        self.frame_rate = cv2.get(cv2.CAP_PROP_FPS)
+        self.frame_rate = 25  # can enforce the frame rate - check with 'ffprobe'
         self.frame_latency = 1/self.frame_rate # duration of a single frame
         self.frame_update_time = 0.01
         self.frame_update = 0
 
         self.trig = Frame_Trigger(self)
         self.trig.start()
-        self.pin = Pin_Off(self, self.trig)
-        self.pin.start()
+        self.start_time = time.time()
 
     def run(self):
         cap = cv2.VideoCapture(self.file)
-        self.start_time = time.time()
         while True:
-            timer = Timer(self.frame_latency, lambda: raise EndFrameFlag) # start time that will wait one frame duration - then throws error
-            timer.start()
-
-            try:
+#            timer = Timer(self.frame_latency, lambda: raise EndFrameFlag) # start time that will wait one frame duration - then throws error
+#            timer.start()
+            self.frame_start = time.time() - self.start_time 
+            if self.frame_start < (self.frame+1)*self.frame_latency:
+            
                 # Capture frame-by-frame
                 ret, frame = cap.read()  # ret = 1 if the video is captured; frame is the image
                 self.time = time.time() - self.start_time # gets the time of a given frame from the begining of the first frame
                 # Display the resulting image
+                refresh_fixation()
                 cv2.imshow('Video', frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):  # press q to quit
                     break
-                # immediately after the frame is drawn then a second timer is started to flash the frame_update for 10 ms
-                frame_timer = Timer(self.frame_update_time, lambda: raise EndFrameUpdateFlag)
-                frame_timer.start()
-
-                try:
-                    self.frame += 1 # counts frame number
-                    self.frame_update = 1
-                    time.sleep(1)
-                except EndFrameUpdateFlag: # allows EndFrameUpdateFlag to pass
-                    pass
-
-                frame_update = 0
-                time.sleep(1)
-            except EndFrameFlag: # allows EndFrameFlag to pass
-                pass
+                x = (time.time() - self.start_time) - (self.frame+1)*self.frame_latency # wait till the end start of the next frame
+                if x > 0:
+                    time.sleep(x)
+            self.frame += 1
 
         # When everything done, release the capture
         cap.release()
@@ -281,143 +282,64 @@ class Frame_Trigger (Thread):
     def __init__(self, Stream_other): # pulls both time and state into itself as per being defined in the initial state machine
         Thread.__init__(self)
         self.Stream_other = Stream_other
-        self.frame_rate = Stream_other.frame_rate
+        self.frame_rate = self.Stream_other.frame_rate
     def run(self):
-        While True:
-            self.frame = self.Stream_other.frame
-            self.time = Stream_other.time
-            if self.frame % self.frame_rate  == 0: # state_frame off
-                frame_state[self.Frame_State_other.frame] = 0
-            else:
-                GPIO.output(pi2trig(16),1)
-                frame_state[self.Frame_State_other.frame] = 1 # state_frame on
-                frame_time.append(self.time)
-                time.sleep(trig_gap)
-            time.sleep(0.001)
-        return frame_state
-
-class Pin_Off (Thread, Frame_Trigger_other):
-    def __init__(self, Stream_other):
-        Thread.__init__(self)
-        self.Stream_other = Stream_other
-    def run(self)
+        toggle = 1 # pays attention to the first time you do something
         while True:
-            if self.Stream_other.frame_update == 1:
-                self.trig_other.change = 0
-                time.sleep(trig_gap)
-                GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
+            self.frame = self.Stream_other.frame
+            self.time = self.Stream_other.time
+            if self.frame % self.frame_rate  != 0: # state_frame off
+                state = 0
+                toggle = 1
             else:
-                time.sleep(0.001)
-                
-##########################################
-# %% Threading of experiment itself to deal with systemic jitter an messy timings
-
-class ColourTimeFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
-    pass
-
-class TrigTimeFlag(Exception): # creat a custom error inherited from the exception class - for use in Stream
-    pass
-
-def Timer_LED(colour):
-    colour_timer = Timer(LED_ON, lambda: raise ColourTimeFlag) # start time that will wait one frame duration - then throws error
-    colour_timer.start()
-    try:
-        pixels.fill(colour)
-        time.sleep(5)
-    except ColourTimeFlag: # allows ColourTimeFlag to pass
-            pass
-    pixels.fill(blank)
-    return
-        
-def Timer_Trig(trig):
-    trig_timer = Timer(trig_gap, lambda: raise TrigTimeFlag) # start time that will wait one frame duration - then throws error
-    trig_timer.start()
-    try:
-        GPIO.output(pi2trig(trig),1)
-        time.sleep(1)
-    except TrigTimeFlag: # allows TrigTimeFlag to pass
-            pass
-    GPIO.output(pi2trig(255),0)
-    return    
-
-class Colour_Switch (Thread):
-    def __init__(self): # pulls both time and state into itself as per being defined in the initial state machine
-        Thread.__init__(self)
-    def run(self):
-        While True:
-            if trig_state == 0
-                time.sleep(0.0001) # 1/10 of a millisecond
-            else:
-                if colour_state = 1:
-                Timer_LED_ON(green)
-                elif colour_state == 2:
-                    Timer_LED(blue)
-                else:
-                    Timer_LED(red)
-                return tc_state
-
-class Trig_Switch (Thread):
-    def __init__(self): # pulls both time and state into itself as per being defined in the initial state machine
-        Thread.__init__(self)
-    def run(self):
-        While True:
-            if trig_state == 0
-                time.sleep(0.0001) # 1/10 of a millisecond
-            else:
-                Timer_Trig(trig_state)
-                tc_state = 0
-                return tc_state 
+                if toggle == 1:
+                    GPIO.output(pi2trig(16),1)
+                    print(self.time)
+                    state = 1 # state_frame on
+                    time.sleep(trig_gap)
+                    GPIO.output(pi2trig(255),0) # shoudn't send a trigger to turn off
+                toggle = 0 
+            append_frame_state(frame_state, self.frame, state, self.time)
+            time.sleep(0.001)
             
+################################################################3
+#Construct window + draw instructions before the experiment begins
 if __name__ == '__main__':
-    refresh_screen()
     window_name = 'projector'
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-    cv2.imshow(window_name, img)
-    for i in length(instruct)
-        cv2.putText(img,instruct(i),(int(2*width/5),height), cv2.FONT_HERSHEY_SIMPLEX , 1,(255,255,255),2,cv2.LINE_AA)
-        GPIO.wait_for_edge(resp_pin,GPIO.RISING)
-        refresh_screen()
+##    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    for i in range(len(Start_Instruct)):
+        img = np.zeros((int(screen_res[0]),int(screen_res[1]),3), np.uint8) # 1960 X 1200 X 3 # all zeros = all black
+        cv2.putText(img,Start_Instruct[i],Start_Instruct_Width[i], cv2.FONT_HERSHEY_COMPLEX_SMALL , 1,(255,255,255),2,cv2.LINE_AA)
+        refresh_fixation()
         cv2.imshow(window_name, img)
-           
-                    
-# %% Experiment itself                   
-for block in range(block_num):
+        if cv2.waitKey(0) & 0xFF == ord('q'):
+            cv2.destroyAllWindows()
+            break
+        
+####### Actual Experiment Starts  ######
     GPIO.wait_for_edge(resp_pin,GPIO.RISING) ## Waits for an initial button press to turn on the LED (red)
-    t = Stream() # initalize the video stream - on the viewpixx
-    t.start()
- 
-    colour_state == 2
-    if block == 0:
-        GPIO.output(pi2trig(12),1) # send unique trigger for the start of the experiment
-        time.sleep(trig_gap)
-        start_exp = time.time()
-        exp_start_stop.append(0)
+    stream = Stream() # initialize stream
+    stream.start() # runs the run() method
+    pixels.fill(red)
     GPIO.output(pi2trig(10),1) # send unique trigger for the start of the block
-    time.sleep(trig_gap)
+
     trig_time.append(time.time() - start_exp)
     block_start_stop.append(time.time() - start_exp) # start of each block from start_exp
-    ## structure output of CSV
-    trig_type.append(3)
-    delay_length.append(2)
-    trial_resp.append(0)
-    jitter_length.append(0)
-    resp_latency.append(0)
-    time.sleep(2) ## leave red on for 2 seconds
-    pixels.fill(blank)
-    GPIO.output(pi2trig(255),0)
+    refresh_trig_visor(3)
     time.sleep(2)
+
     for i_trial in range(len(trials)):
         start_trial = time.time() + trig_gap # define start time of a given trial
         delay = ((randint(0,500)*0.001)+1.0) # define delay, to be used later
         delay_length.append(delay)
         ##determine the type of stimuli we will show on this trial##
         if trials[i_trial] == 0: #standards
-            tc_state = 1 # green
-    ##                pi.write(4, 1)
+            trig = 1
+            pixels.fill(green)
         elif trials[i_trial] == 1: #targets
-            tc_state = 2 # blue
-    ##                pi.write(17, 1)
+            trig = 2
+            pixels.fill(blue)
         GPIO.output(pi2trig(trig),1) ## Specify which trigger to send Standard vs Target
         trig_type.append(trig)
         trig_time.append(time.time() - start_exp)
@@ -433,44 +355,24 @@ for block in range(block_num):
         time.sleep(trig_gap)
         end_trial = time.time()
 
-        actual_trial_length = end_trial - start_trial
-        theoretical_trial_length = delay + 1.0
-        jitter = actual_trial_length - theoretical_trial_length
-        jitter_length.append(jitter)
-
-    ##end of experiment##
+        trial_count += 1
+    ##end of block##
     pixels.fill(red)
-    GPIO.output(pi2trig(11),1) # send unique trigger for the end of a block
-    trig_time.append(time.time() - start_exp)
-    block_start_stop.append(time.time() - start_exp) # end of each block from start_exp
-    ## structure output of CSV
-    trig_type.append(4)
-    delay_length.append(2)
-    trial_resp.append(0)
-    jitter_length.append(0)
-    resp_latency.append(0)
-    time.sleep(2) ## leave red on for 2 seconds
-    pixels.fill(blank)
-    GPIO.output(pi2trig(255),0)
-    time.sleep(2)
 
-GPIO.output(pi2trig(13),1) # send unique trigger for the start of the experiment
-time.sleep(trig_gap)
+# End of the experiment           
 exp_start_stop.append(time.time() - start_exp)
+img = np.zeros((int(screen_res[0]),int(screen_res[1]),3), np.uint8) # 1960 X 1200 X 3 # all zeros = all black
+cv2.putText(img,End_Instruct[0],End_Instruct_Width[0], cv2.FONT_HERSHEY_COMPLEX_SMALL , 1,(255,255,255),2,cv2.LINE_AA)
+cv2.putText(img,End_Instruct[1],End_Instruct_Width[1], cv2.FONT_HERSHEY_COMPLEX_SMALL , 1,(255,255,255),2,cv2.LINE_AA)
+cv2.imshow(window_name, img)
+cv2.waitKey(0)
+
 rainbow_cycle(0.001, 5) ## After all blocks flash a rainbow at a refresh of (1st arguement) ms for (2nd arguement) seconds
 
 pixels.fill(blank)
+cv2.destroyAllWindows()
 
 ###save trial information###
-filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/Pi3_Amp_Latencies/Pi_Time_Data/" + partnum + "_" + filename + ".csv")
+filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/Pilot_Data/Experiment_1/" + partnum + "_" + filename + ".csv")
 
-# What is each thing
-# trig_type
-# trig_time
-# delay_length
-# trial_resp
-# jitter_length
-# resp_latency
-# start_stop
-
-numpy.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, jitter_length, resp_latency, block_start_stop, exp_start_stop), delimiter=',',fmt="%s")
+np.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, resp_latency, exp_start_stop, frame_state), delimiter=',',fmt="%s")

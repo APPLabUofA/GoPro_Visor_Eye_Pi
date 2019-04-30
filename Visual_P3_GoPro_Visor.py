@@ -196,13 +196,14 @@ def refresh_fixation():
     img[int(width-width/100):int(width+width/100), int(height-height/20):int(height+height/20), :] = 255
     img[int(width-width/20):int(width+width/20), int(height-height/100):int(height+height/100), :] = 255
 
-##def Break_Screen():
-##    img = np.zeros((int(screen_res[0]),int(screen_res[1]),3), np.uint8) # 1960 X 1200 X 3 # all zeros = all black
-##    cv2.putText(img,Break_Instruct[0],Break_Instruct_Width[0], cv2.FONT_HERSHEY_COMPLEX_SMALL , 1,(255,255,255),2,cv2.LINE_AA)
-##    cv2.putText(img,Break_Instruct[1],Break_Instruct_Width[1], cv2.FONT_HERSHEY_COMPLEX_SMALL , 1,(255,255,255),2,cv2.LINE_AA)
-##    refresh_fixation()
-##    cv2.imshow(window_name, img)
-##    cv2.waitKey(0)
+def refresh_trig_visor(x): # structure output of CSV
+    trig_type.append(x)
+    delay_length.append(2)
+    trial_resp.append(0)
+    resp_latency.append(0)
+    time.sleep(2) ## leave red on for 2 seconds
+    pixels.fill(blank)
+    GPIO.output(pi2trig(255),0)
     
 ##define the ip address for the second Pi we will be controlling##
 ##pi = pigpio.pi('192.168.1.216')
@@ -216,7 +217,6 @@ trig_time   = []
 trig_type = []
 delay_length  = []
 trial_resp = []
-jitter_length = []
 resp_latency = []
 block_start_stop = []
 exp_start_stop = []
@@ -254,15 +254,7 @@ if __name__ == '__main__':
             exp_start_stop.append(0)
         trig_time.append(time.time() - start_exp)
         block_start_stop.append(time.time() - start_exp) # start of each block from start_exp
-        ## structure output of CSV
-        trig_type.append(3)
-        delay_length.append(2)
-        trial_resp.append(0)
-        jitter_length.append(0)
-        resp_latency.append(0)
-        time.sleep(2) ## leave red on for 2 seconds
-        pixels.fill(blank)
-        GPIO.output(pi2trig(255),0)
+        refresh_trig_visor(3)
         time.sleep(2)
         for i_trial in range(len(trials)):
             start_trial = time.time() + trig_gap # define start time of a given trial
@@ -292,10 +284,6 @@ if __name__ == '__main__':
             time.sleep(trig_gap)
             end_trial = time.time()
 
-            actual_trial_length = end_trial - start_trial
-            theoretical_trial_length = delay + 1.0
-            jitter = actual_trial_length - theoretical_trial_length
-            jitter_length.append(jitter)
 
             trial_count += 1
         ##end of block##
@@ -303,15 +291,7 @@ if __name__ == '__main__':
         GPIO.output(pi2trig(11),1) # send unique trigger for the end of a block
         trig_time.append(time.time() - start_exp)
         block_start_stop.append(time.time() - start_exp) # end of each block from start_exp
-        ## structure output of CSV
-        trig_type.append(4)
-        delay_length.append(2)
-        trial_resp.append(0)
-        jitter_length.append(0)
-        resp_latency.append(0)
-        time.sleep(2) ## leave red on for 2 seconds
-        pixels.fill(blank)
-        GPIO.output(pi2trig(255),0)
+        refresh_trig_visor(4)
         time.sleep(2)
         # Break Screen Instructions
         if trial_count < block_num:
@@ -347,4 +327,4 @@ filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/Pilot_Data/Experiment_1/" +
 # resp_latency
 # start_stop
 
-np.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, jitter_length, resp_latency, block_start_stop, exp_start_stop), delimiter=',',fmt="%s")
+np.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, resp_latency, block_start_stop, exp_start_stop), delimiter=',',fmt="%s")
