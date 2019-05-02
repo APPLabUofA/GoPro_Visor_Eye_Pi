@@ -114,14 +114,14 @@ skip_frames = 238 # baseline skip number of frames
 frame_number = start_flash[par]
 in_frame = True      
 while in_frame == True: 
-    change = 0      
+    change = 0
+    ret, frame = cap.read()        
     count += 1
     frame_number += skip_frames
     if frame_number >= past_last[par]:
         in_frame = False
     cap.set(1,frame_number)
-    ret, frame = cap.read()  
-    img = frame[240:480,212:636,:]
+    
     img1 = frame[240:480,212:636,:]
 
     if count == 1:
@@ -139,7 +139,7 @@ while in_frame == True:
         temp_sum = 0,np.sum(hist_norm_b[0,150:-1]),np.sum(hist_norm_g[0,200:-1]),np.sum(hist_norm_r[0,150:-1])
         change = temp_sum.index(max(temp_sum))
 
-    Trigger_State = np.append(Trigger_State, np.matrix((frame_number, change)),axis=0)
+    Trigger_State = np.append(Trigger_State, np.matrix((count, change)),axis=0)
       
     if change != 0:
 
@@ -160,13 +160,9 @@ while in_frame == True:
             x,y,w,h = cv2.boundingRect(c)            # get bounding box of largest contour
             img2 = cv2.drawContours(img1, c, -1, (255,255,255), 4)
             img3 = cv2.rectangle(img2,(x,y),(x+w,y+h),(0,0,255),2)  # draw red bounding box in img
+    
             cv2.putText(img3, col_name[change], (x, y+h), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), lineType=cv2.LINE_AA) 
-            cap.set(1,frame_number)
-            ret, frame = cap.read()
-            frame = frame[240:480,212:636,:]
-            last_countie = frame[y:y+h,x:x+w,:]
-            cv2.imshow("",last_countie)
-            cv2.imshow(' ',img3)  
+            cv2.imshow('',img3)  
             out.write(img3)
         else:
             if full_video == 1:
@@ -182,34 +178,23 @@ while in_frame == True:
             i = 1
             detect = False
             jump_mod = 0 
-            broad_threshold = 10000
             while detect == False:
                 jump = 100/(2*i) 
-                current_frame  = int(framing_num + jump*direction)
+                current_frame  = round(framing_num + jump*direction)
                 cap.set(1,current_frame)
                 ret, frame_current = cap.read() 
                 frame_current = frame_current[240:480,212:636,:]
-                countie = frame_current[y:y+h,x:x+w,:]
-                cv2.imshow("last",last_countie)
-                cv2.imshow("current{}".format(current_frame),countie)
-                last_countie_sum = last_countie.sum()
-                countie_sum = countie.sum()
-#                diff = cv2.absdiff(frame_current, previous_frame)
-                if last_countie_sum - countie_sum >= broad_thresh:
+                diff = cv2.absdiff(frame_current, previous_frame)
+                if np.sum(diff) >= broad_thresh:
                     direction = -1 * direction
                     state_change = True
                     i += 1
                 else:
                     state_change = False
-                if abs(framing_num - current_frame) < 2 and last_state_change == state_change:
-#                    if frame_number - current_frame > 0:
-                        edge.append(current_frame) 
-                        detect = True
-#                    else:
-#                        i = 1
-#                        broad_threshold += 20000
+                if abs(framing_num - current_frame) < 1.4 and last_state_change == state_change:
+                    edge.append(current_frame)      
                     ######################
-#                    for i in range(10):
+#                    for i in range(3):
 #                        currenty_frame = current_frame-i + i
 #                        cap.set(1, currenty_frame)
 #                        ret, frame_current = cap.read()
@@ -217,12 +202,11 @@ while in_frame == True:
 #                        print(currenty_frame)
 #                        cv2.imshow("frame_current_{}".format(i), frame_current)
                     ########################    
-
+                    detect = True
                 last_state_change = state_change
                 framing_num = current_frame
                 previous_frame = frame_current
-                last_countie = countie
-#                cv2.imshow("frame_current_{}".format(current_frame), countie)
+#                cv2.imshow("frame_current_{}".format(i), frame_current)
             front_back -= 2
 #        findEdges()
         cap.set(1,frame_number)
@@ -236,7 +220,7 @@ while in_frame == True:
     if change == 0:
         last_frame = frame # make the current frame = to last_frame for drawing in the next iteration
 #    cv2.imshow('Original', frame)
-#    cv2.imshow('Decreased Size',img1)
+    cv2.imshow('Decreased Size',img1)
     last_frame = img1
     if cv2.waitKey(10) & 0xFF == ord('q'):  # press q to quit
         break

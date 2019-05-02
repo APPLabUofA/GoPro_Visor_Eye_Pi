@@ -40,15 +40,13 @@ df1 = df1.drop(columns='index')
 
 # %% Here we extract thhe Pi times (imported as df2)
 #df2 = pd.read_csv((r'C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Pi_Time_Data\014_visual_p3_gopro_visor.csv'), sep=',', header=None) # pre-pilot
-df2 = pd.read_csv((r'C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pilot_Data\Experiment_1\Pi_Times\002_visual_p3_gopro_visor.csv'), sep=',', header=None) # pilot
-df2 = df2.T # transpose for plotting purposes
-df2.columns = ['pi_type','pi_onset_latency','pi_delay','pi_resp','pi_jitter','pi_resp_latency','block_start_stop','pi_start_stop',] # name the coloumns
+df2 = pd.read_csv((r'C:\Users\User\Documents\GitHub\GoPro_Visor_Pi\Pi3_Amp_Latencies\Video\12345_visual_p3_video.csv'), sep=',', header=None) # pilot
+#df2 = df2.T # transpose for plotting purposes
+df2.columns = ['frame_state'] # name the coloumns
 df2 = df2.apply(pd.to_numeric, args=('coerce',))  ## Convert to numeric
-df2= df2.dropna(thresh=2)
-criteria_1 = df2['pi_type'] == 1 
-criteria_2 =  df2['pi_type'] == 2
-criteria_all = criteria_1 | criteria_2
-df2 = df2[criteria_all] # Unalignable boolean Series provided as indexer (index of the boolean Series and of the indexed object do not match
+#df2= df2.dropna(thresh=2)
+criteria_1 = df2['frame_state'] == 1 
+df2 = df2[criteria_1] # Unalignable boolean Series provided as indexer (index of the boolean Series and of the indexed object do not match
 # deal with this with the following - df2 = df2.reset_index()
 # %% 
 df2 = df2.reset_index()
@@ -69,6 +67,9 @@ df3['Difference'] = df3['eeg_times'] - df3['pi_onset_latency']
 plt.close('all')
 # matlibplot 
 plt.figure(0)
+plt.plot(df2['index'], df2['level_0'], 'k--', label='Pi Times')
+
+
 plt.plot(df3['pi_onset_latency'], df3['level_0'], 'k--', label='Pi Times')
 plt.plot(df3['eeg_times'], df3['level_0'], 'ko', label='EEG Times')
 plt.xlabel('Latency (Seconds)')
