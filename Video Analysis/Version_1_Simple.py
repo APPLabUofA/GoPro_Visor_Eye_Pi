@@ -3,6 +3,10 @@
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
+import mne
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 #import matplotlib.animation as animation
 
 # %%
@@ -57,8 +61,8 @@ if webcam == 1:
     in_file = 0
 
 # for debugging purposes
-in_file = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\GOPR0212.avi'
-
+#in_file = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\GOPR0212.avi'
+in_file = 'C:\\C:\Users\\eredm\\OneDrive\\Desktop\\GOPR0212.avi'
 # %% # Are we saving an output file (file with overlaid filters/bounders/manipulations)?
  # # Version - example '001' or '054'
 out_format = '.avi'
@@ -121,7 +125,6 @@ while in_frame == True:
         in_frame = False
     cap.set(1,frame_number)
     ret, frame = cap.read()  
-    img = frame[240:480,212:636,:]
     img1 = frame[240:480,212:636,:]
 
     if count == 1:
@@ -171,7 +174,7 @@ while in_frame == True:
         else:
             if full_video == 1:
                 out.write(img1)
-        
+        ######################################## Find Edges ######################
         front_back = 1
         edge = []
         while front_back >= -1:
@@ -184,18 +187,19 @@ while in_frame == True:
             jump_mod = 0 
             broad_threshold = 10000
             while detect == False:
-                jump = 100/(2*i) 
+                jump = 100/(2*i)
+#                jump = 100^i
                 current_frame  = int(framing_num + jump*direction)
                 cap.set(1,current_frame)
                 ret, frame_current = cap.read() 
                 frame_current = frame_current[240:480,212:636,:]
                 countie = frame_current[y:y+h,x:x+w,:]
                 cv2.imshow("last",last_countie)
-                cv2.imshow("current{}".format(current_frame),countie)
-                last_countie_sum = last_countie.sum()
-                countie_sum = countie.sum()
+                cv2.imshow("{}_frame_{}".format(i,current_frame),countie)
+                last_countie_sum = int(last_countie.sum())
+                countie_sum = int(countie.sum())
 #                diff = cv2.absdiff(frame_current, previous_frame)
-                if last_countie_sum - countie_sum >= broad_thresh:
+                if abs(last_countie_sum - countie_sum) >= broad_thresh:
                     direction = -1 * direction
                     state_change = True
                     i += 1
@@ -205,6 +209,7 @@ while in_frame == True:
 #                    if frame_number - current_frame > 0:
                         edge.append(current_frame) 
                         detect = True
+                        print(i)
 #                    else:
 #                        i = 1
 #                        broad_threshold += 20000
@@ -252,7 +257,6 @@ cv2.destroyAllWindows()
 # look at the 2 frames around each start flash (3 in total) to ensure that we actually have the start of flashes, not the ends
 # 
 cap = cv2.VideoCapture(in_file)
-
 for i in range(3): #range(len(Trigger_Start))
     currenty_frame = int(Trigger_Start[i+2,0])
     for ii in range(3):
@@ -262,5 +266,40 @@ for i in range(3): #range(len(Trigger_Start))
         frame_current = frame_current[240:480,212:636,:]
         print(currentier_frame)
         cv2.imshow("flash {} frame {}".format(i+1,ii-1), frame_current)
+
+df1 = pd.DataFrame(data=Trigger_Start[1:,1:], index=df1[1:,0], columns=df1[0,1:])   # change to a pandas DataFrame
+df1 = df1.reset_index() #moves the index over - #df1 = df1.reset_index() # may need a second one to recalibrate index to index_0
+df1.columns = ['Index', 'Frame'] # name columns - may need to add ['Adj_Index']
+df1['Frame'] = (df1['Frame'] - df1['Frame'][0]) * 0.001 #from each one minus the number of frames from the start of the first frame of the first red flash 
+
+criteria_1 = df1['Frame'] == 3 # if not preceded by another 3 %% not sure how this is configured in pdf
+Block_Starts = df1[criteria_1]
+criteria_a = df1['Frame'] == 1
+criteria_b = df1['Frame'] == 2
+Targ_Std = criteria_a | criteria_b
+
+######################################### Load in EEG to compare
+par = "002"
+
+
+filename = 'C:\\Users\eredm\OneDrive\Desktop\\EEG_Data' + par + '_GoPro_Visor_Eye_Pi.vhdr' # pilot
+raw = mne.io.read_raw_brainvision(filename)
+df1 = mne.find_events(raw) # outputs a numpy.ndarray
+df1 = np.insert(df1,0,[0],axis = 0) #shift data one row down from the top so we don't miss the first event on o
+df1 = pd.DataFrame(data=df1[1:,1:], index=df1[1:,0], columns=df1[0,1:])   # change to a pandas DataFrame
+df1 = df1.reset_index() 
+df1.columns = ['eeg_times', 'Empty', 'Event_Type'] # name columns
+df1 = df1.drop(columns='Empty') # get rid of empty column
+# align the MNE database event timings from the first target
+df1['eeg_times'] = (df1['eeg_times'] - df1['eeg_times'][0]) * 0.001 # subtract all from start trigger - make sure it is the right trigger number
+
+criteria_1 = df1['Event_Type'] == 1 
+criteria_2 =  df1['Event_Type'] == 2
+criteria_all = criteria_1 | criteria_2 # either/or event defined above
+df1 = df1[criteria_all]
+df1 = df1.reset_index() # resets index after removing events
+df1 = df1.drop(columns='index')
+## still need to minus all from the first event trigger before it gets deleted
+
 
 
