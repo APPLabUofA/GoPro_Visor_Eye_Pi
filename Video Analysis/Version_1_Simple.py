@@ -2,7 +2,6 @@
 # Note, must clear variable between reruns
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
 import mne
 import pandas as pd
 import seaborn as sns
@@ -62,7 +61,7 @@ if webcam == 1:
 
 # for debugging purposes
 #in_file = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\GOPR0212.avi'
-in_file = 'C:\\C:\Users\\eredm\\OneDrive\\Desktop\\GOPR0212.avi'
+in_file = 'C:\\Users\\eredm\\OneDrive\\Desktop\\GOPR0212.avi'
 # %% # Are we saving an output file (file with overlaid filters/bounders/manipulations)?
  # # Version - example '001' or '054'
 out_format = '.avi'
@@ -279,10 +278,9 @@ criteria_b = df1['Frame'] == 2
 Targ_Std = criteria_a | criteria_b
 
 ######################################### Load in EEG to compare
-par = "002"
+par = "001"
 
-
-filename = 'C:\\Users\eredm\OneDrive\Desktop\\EEG_Data' + par + '_GoPro_Visor_Eye_Pi.vhdr' # pilot
+filename = 'C:\\Users\\eredm\\OneDrive\\Desktop\\EEG_Data\\' + par + '_GoPro_Visor_Eye_Pi.vhdr' # pilot
 raw = mne.io.read_raw_brainvision(filename)
 df1 = mne.find_events(raw) # outputs a numpy.ndarray
 df1 = np.insert(df1,0,[0],axis = 0) #shift data one row down from the top so we don't miss the first event on o
