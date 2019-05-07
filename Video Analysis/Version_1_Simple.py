@@ -60,8 +60,8 @@ if webcam == 1:
     in_file = 0
 
 # for debugging purposes
-#in_file = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\GOPR0212.avi'
-in_file = 'C:\\Users\\eredm\\OneDrive\\Desktop\\GOPR0212.avi'
+in_file = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\GOPR0212.avi'
+#in_file = 'C:\\Users\\eredm\\OneDrive\\Desktop\\GOPR0212.avi'
 # %% # Are we saving an output file (file with overlaid filters/bounders/manipulations)?
  # # Version - example '001' or '054'
 out_format = '.avi'
@@ -167,8 +167,8 @@ while in_frame == True:
             ret, frame = cap.read()
             frame = frame[240:480,212:636,:]
             last_countie = frame[y:y+h,x:x+w,:]
-            cv2.imshow("",last_countie)
-            cv2.imshow(' ',img3)  
+#            cv2.imshow("",last_countie)
+#            cv2.imshow(' ',img3)  
             out.write(img3)
         else:
             if full_video == 1:
@@ -193,8 +193,8 @@ while in_frame == True:
                 ret, frame_current = cap.read() 
                 frame_current = frame_current[240:480,212:636,:]
                 countie = frame_current[y:y+h,x:x+w,:]
-                cv2.imshow("last",last_countie)
-                cv2.imshow("{}_frame_{}".format(i,current_frame),countie)
+#                cv2.imshow("last",last_countie)
+#                cv2.imshow("{}_frame_{}".format(i,current_frame),countie)
                 last_countie_sum = int(last_countie.sum())
                 countie_sum = int(countie.sum())
 #                diff = cv2.absdiff(frame_current, previous_frame)
@@ -265,18 +265,19 @@ for i in range(3): #range(len(Trigger_Start))
         frame_current = frame_current[240:480,212:636,:]
         print(currentier_frame)
         cv2.imshow("flash {} frame {}".format(i+1,ii-1), frame_current)
-
-df1 = pd.DataFrame(data=Trigger_Start[1:,1:], index=df1[1:,0], columns=df1[0,1:])   # change to a pandas DataFrame
+        
+df1 = pd.DataFrame(Trigger_Start)
+df1.columns = ['Frame_Number', 'Event'] # name columns - may need to add ['Adj_Index']
+df1 = df1.drop([0,0],axis=0) # df1.iloc[1:,] also works
 df1 = df1.reset_index() #moves the index over - #df1 = df1.reset_index() # may need a second one to recalibrate index to index_0
-df1.columns = ['Index', 'Frame'] # name columns - may need to add ['Adj_Index']
-df1['Frame'] = (df1['Frame'] - df1['Frame'][0]) * 0.001 #from each one minus the number of frames from the start of the first frame of the first red flash 
-
-criteria_1 = df1['Frame'] == 3 # if not preceded by another 3 %% not sure how this is configured in pdf
-Block_Starts = df1[criteria_1]
-criteria_a = df1['Frame'] == 1
-criteria_b = df1['Frame'] == 2
-Targ_Std = criteria_a | criteria_b
-
+df1 = df1.drop(columns='index')
+df1['Frame_Number'] = (df1['Frame_Number'] - df1['Frame_Number'][0]) #from each one minus the number of frames from the start of the first frame of the first red flash 
+df1['Frame_Number'] = (df1['Frame_Number']/240)
+criteria_1 = df1['Event'] == 3 # if not preceded by another 3 %% not sure how this is configured in pdf
+Block_Starts_Stops = df1[criteria_1]
+criteria_a = df1['Event'] == 1
+criteria_b = df1['Event'] == 2
+Targ_Std = df1[criteria_a | criteria_b]
 ######################################### Load in EEG to compare
 par = "001"
 
@@ -298,6 +299,8 @@ df1 = df1[criteria_all]
 df1 = df1.reset_index() # resets index after removing events
 df1 = df1.drop(columns='index')
 ## still need to minus all from the first event trigger before it gets deleted
+
+
 
 
 

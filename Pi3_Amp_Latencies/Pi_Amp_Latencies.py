@@ -19,7 +19,7 @@ par = "002"
 #### Now we will go through the EEG file and determine our latencies
 
 # filename = 'M:\Data\GoPro_Visor\Pi_Amp_Latency_Test\\testing_visor_pi_' + par + '.vhdr' # pre-pilot
-filename = 'M:\Data\GoPro_Visor\Experiment_1\\' + par + '_GoPro_Visor_Eye_Pi.vhdr' # pilot
+filename = 'M:\Data\GoPro_Visor\Experiment_1\\Pilot_1\EEG_Data\\' + par + '_GoPro_Visor_Eye_Pi.vhdr' # pilot
 raw = mne.io.read_raw_brainvision(filename)
 df1 = mne.find_events(raw) # outputs a numpy.ndarray
 df1 = np.insert(df1,0,[0],axis = 0) #shift data one row down from the top so we don't miss the first event on o
@@ -27,7 +27,7 @@ df1 = pd.DataFrame(data=df1[1:,1:], index=df1[1:,0], columns=df1[0,1:])   # chan
 df1 = df1.reset_index() 
 df1.columns = ['eeg_times', 'Empty', 'Event_Type'] # name columns
 df1 = df1.drop(columns='Empty') # get rid of empty column
-df1['eeg_times'] = (df1['eeg_times'] - df1['eeg_times'][0]) * 0.001 # subtract all from start trigger
+df1['eeg_times'] = (df1['eeg_times'] - df1['eeg_times'][0]) # subtract all from start trigger
 
 criteria_1 = df1['Event_Type'] == 1 
 criteria_2 =  df1['Event_Type'] == 2
