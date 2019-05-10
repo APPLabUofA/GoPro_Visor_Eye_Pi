@@ -316,7 +316,7 @@ pixels.fill(blank)
 cv2.destroyAllWindows()
 
 ###save trial information###
-filename_part = ("/home/pi/GitHub/GoPro_Visor_Eye_Pi/Pilot_Data/Experiment_1/" + partnum + "_" + filename + ".csv")
+filename_part = ("/home/pi/Documents/GitHub/GoPro_Visor_Eye_Pi/Data/Experiment_1/" + partnum + "_" + filename + ".csv")
 
 
 np.savetxt(filename_part, (trig_type,trig_time, delay_length, trial_resp, resp_latency, block_start_stop, exp_start_stop), delimiter=',',fmt="%s")
