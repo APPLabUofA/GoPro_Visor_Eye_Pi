@@ -47,10 +47,10 @@ param_quant = 0 # counts frames from two different methods
 webcam = 1 # set to 1 if input is a webcam
 exp_num = 2
 broad_thresh = 200000
-path = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\\'
-part = '011' # Version - example '001' or '054'
+path = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Video\\Converted\\'
+part = '001' # Version - example '001' or '054'
 par = 1
-exp = 'GOPR0212' # ex. '003_camera_p3'
+exp = '001' # ex. '003_camera_p3'
 in_format = '.avi'
 in_file = path + exp + in_format # may need to add part in between the path and exp, depending on file name/exp_num
 last_frame = np.zeros((3,256))
@@ -60,7 +60,7 @@ if webcam == 1:
     in_file = 0
 
 # for debugging purposes
-in_file = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\GOPR0212.avi'
+#in_file = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Pilot_1\\GoPro_Videos\\Converted\GOPR0212.avi'
 #in_file = 'C:\\Users\\eredm\\OneDrive\\Desktop\\GOPR0212.avi'
 # %% # Are we saving an output file (file with overlaid filters/bounders/manipulations)?
  # # Version - example '001' or '054'
@@ -124,6 +124,7 @@ while in_frame == True:
         in_frame = False
     cap.set(1,frame_number)
     ret, frame = cap.read()  
+    cv2.imshow(frame, " ")
     img1 = frame[240:480,212:636,:]
 
     if count == 1:
@@ -250,22 +251,24 @@ out.release()
 cap.release()
 cv2.destroyAllWindows()
 
-# %%
+# %% Confirm the efficacy of the flash pull script
 
 # if there are multiple identifications in a row that are not red, then take out the second event in the train
 # look at the 2 frames around each start flash (3 in total) to ensure that we actually have the start of flashes, not the ends
-# 
-cap = cv2.VideoCapture(in_file)
-for i in range(3): #range(len(Trigger_Start))
-    currenty_frame = int(Trigger_Start[i+2,0])
-    for ii in range(3):
-        currentier_frame = currenty_frame-1 + ii
-        cap.set(1, currentier_frame)
-        ret, frame_current = cap.read()
-        frame_current = frame_current[240:480,212:636,:]
-        print(currentier_frame)
-        cv2.imshow("flash {} frame {}".format(i+1,ii-1), frame_current)
-        
+#num_checks = 10
+#cap = cv2.VideoCapture(in_file)
+#for i in range(num_checks): #range(len(Trigger_Start))
+#    currenty_frame = int(Trigger_Start[i+2,0])
+#    for ii in range(3):
+#        currentier_frame = currenty_frame-1 + ii
+#        cap.set(1, currentier_frame)
+#        ret, frame_current = cap.read()
+#        frame_current = frame_current[240:480,212:636,:]
+#        print(currentier_frame)
+#        cv2.imshow("flash {} frame {}".format(i+1,ii-1), frame_current)
+#        
+# %% Struture the data pulled from the video in a Pandas Data Frame
+
 df1 = pd.DataFrame(Trigger_Start)
 df1.columns = ['Frame_Number', 'Event'] # name columns - may need to add ['Adj_Index']
 df1 = df1.drop([0,0],axis=0) # df1.iloc[1:,] also works
@@ -280,6 +283,8 @@ criteria_b = df1['Event'] == 2
 Targ_Std = df1[criteria_a | criteria_b]
 ######################################### Load in EEG to compare
 par = "001"
+
+# %% Load in EEG times
 
 filename = 'C:\\Users\\eredm\\OneDrive\\Desktop\\EEG_Data\\' + par + '_GoPro_Visor_Eye_Pi.vhdr' # pilot
 raw = mne.io.read_raw_brainvision(filename)
@@ -299,6 +304,10 @@ df1 = df1[criteria_all]
 df1 = df1.reset_index() # resets index after removing events
 df1 = df1.drop(columns='index')
 ## still need to minus all from the first event trigger before it gets deleted
+
+# %% Transform based on a linear regression based off of purely the first and last flashes
+# compare differences of each event
+
 
 
 
