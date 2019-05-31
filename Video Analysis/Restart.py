@@ -13,7 +13,7 @@ import pandas as pd
 
 # %% Video Input Settings
 path = 'M:\\Data\\GoPro_Visor\\Experiment_1\\Video\\Converted\\Split\\00'
-par = 4
+par = 5
 Vid_Num = 1
 in_format = '.avi'
 in_file = path + str(par) + '_0' + str(Vid_Num) + in_format # may need to add part in between the path and exp, depending on file name/exp_num
@@ -33,8 +33,8 @@ if exp_num == 2 & Vid_Num == 2: # new data (2019) experiment 1, pilot 1
     past_last = [0,294960,0,486718,973436] #
     
 elif exp_num == 2: # new data (2019) experiment 1, pilot 1
-    start_flash = [0,25000,0,15000,7500]
-    past_last = [0,294960,0,215784,253950]
+    start_flash = [0,25000,0,15000,7500,17000]
+    past_last = [0,294960,0,215784,253950,253950]
     
 total_frames = past_last[par]-start_flash[par]
 Vid_1_Dur = [0,0,0,(253950-15000)/239.76023391812865,(253950-7500)/239.76023391812865] # The duration in time (s) of the first video (from the first flash - not including beginning)
@@ -52,9 +52,9 @@ col_check = 0
 ts_count = 0
 
 col = ['green','blue','red']
-b_w8 = [0,0,0,1,1]
-g_w8 = [0,0,0,7,7]
-r_w8 = [0,0,0,1.4,1.4]
+b_w8 = [0,0,0,1,1,1]
+g_w8 = [0,0,0,7,7,7]
+r_w8 = [0,0,0,1.4,1.4,1.4]
 
 
 # %% Main Analysis - Grabbing & Quanitfying video Frames
@@ -66,7 +66,7 @@ in_frame = True
   
 while in_frame == True: 
           
-    if frame_number >= past_last[par]:
+    if frame_number >= past_last[par]-1:
         in_frame = False
     cap.set(1,frame_number)
     ret, frame = cap.read()  
@@ -128,18 +128,18 @@ cv2.destroyAllWindows()
 #df1b = df1b.reset_index() #moves the index over - #df1 = df1.reset_index() # may need a second one to recalibrate index to index_0
 #df1b = df1b.drop(columns='index')
 #df1b.iloc[1:,]
- 
+
 # Construct a dataframe from the output of above scripts
 Trigger_Start_fin = Trigger_Start[0:ts_count,:]
 df1 = pd.DataFrame(Trigger_Start_fin) 
 df1.columns = ['Frame', 'Event'] # name columns - may need to add ['Adj_Index']
-df1 = df1.drop(df1[df1.Event ==3].index)
-df1 = df1.reset_index() #moves the index over - #df1 = df1.reset_index() # may need a second one to recalibrate index to index_0
-df1 = df1.drop(columns='index')
+
 df1['Frame'] = (df1['Frame'] - df1['Frame'][0]) #from each one minus the number of frames from the start of the first frame of the first red flash 
 df1['Frame'] = (df1['Frame']/fps) # Change from the conversion
 df1.columns = ['Time', 'Event']
-
+df1 = df1.drop(df1[df1.Event ==3].index)
+df1 = df1.reset_index() #moves the index over - #df1 = df1.reset_index() # may need a second one to recalibrate index to index_0
+df1 = df1.drop(columns='index')
 
 # Create temporary dataframes for each video
 if Vid_Num == 1:
