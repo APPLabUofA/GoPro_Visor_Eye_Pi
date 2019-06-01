@@ -32,11 +32,18 @@ outlier_def = 2 # number seconds of required jitter in order to be automatically
 #df1b.iloc[1:,]
 
 # %% To ensure event labeling accurate load in the data from the pi - Might have to turn events into a dataframe to fit in
-pi_times = pd.read_csv((r'C:\Users\User\Desktop\export_dataframe_df1c_00' + str(par) + '.csv', sep=',', header=True) # pilot
-pi_times = pi_times.T
-pi_times = pi_times[0,pi_times[0,:] == 1 | pi_times[0,:] == 2]
+#pi_times = pd.read_csv((r'M:\Data\GoPro_Visor\Experiment_1\Pi_Times\\00' + str(par) + '_visual_p3_gopro_visor.csv'), sep=',') # pilot
+pi_times = np.genfromtxt((r'M:\Data\GoPro_Visor\Experiment_1\Pi_Times\\00' + str(par) + '_visual_p3_gopro_visor.csv'), delimiter=',')
+pi_times = pi_times[0,:]
+pi_times = np.delete(pi_times,(0,4))
+pi_times = pi_times.astype(int)
 
-df1['Event'] = pi_times
+# Add into the camera time dataframe
+df1['Event_pi'] = pi_times[0:len(df1.index)]
+df1 = df1.drop(df1[(df1.Event_pi == 3)|(df1.Event_pi == np.nan)|(df1.Event_pi == 4)].index) # With the first event aligned - drop any event 3's according to the pi_times
+df1 = df1.drop([0]) # With the first event aligned - drop any event 3's according to the pi_times
+df1 = df1.reset_index() # resets index after removing events
+df1 = df1.drop(columns='index')
 # %% Load in EEG times
 
 filename = 'M:\Data\GoPro_Visor\Experiment_1\EEG_Data\\00' + str(par) + '_GoPro_Visor_Eye_Pi.vhdr' # pilot
