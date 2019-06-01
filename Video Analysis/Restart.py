@@ -24,7 +24,7 @@ in_file = path + str(par) + '_0' + str(Vid_Num) + in_format # may need to add pa
 # %% Experiment Specific Info
 trial_count = 750
 exp_num = 2
-broad_thresh = 1300000
+broad_thresh = 1222000
 
 # %% Participant Specific Info
 
@@ -132,36 +132,41 @@ cv2.destroyAllWindows()
 # Construct a dataframe from the output of above scripts
 Trigger_Start_fin = Trigger_Start[0:ts_count,:]
 df1 = pd.DataFrame(Trigger_Start_fin) 
-df1.columns = ['Frame', 'Event'] # name columns - may need to add ['Adj_Index']
-
-df1['Frame'] = (df1['Frame'] - df1['Frame'][0]) #from each one minus the number of frames from the start of the first frame of the first red flash 
-df1['Frame'] = (df1['Frame']/fps) # Change from the conversion
+df1.columns = ['Frame', 'Event'] 
+df1 = df1.drop(df1[df1.Event == 3].index) # This will get rid of red events (start + end of blocks/experiment)
+df1['Frame'] = (df1['Frame']/fps) # Change from frame number to seconds from the start of the experiment
+temp_diff = df1.diff() # take the difference vertically to find the time gap between each event
+#df1 = df1.drop(temp_diff[temp_diff.Time < 0.2].index) # This will get rid of double detections (events within 0.2 seconds of each other)
 df1.columns = ['Time', 'Event']
-df1 = df1.drop(df1[df1.Event ==3].index)
 df1 = df1.reset_index() #moves the index over - #df1 = df1.reset_index() # may need a second one to recalibrate index to index_0
 df1 = df1.drop(columns='index')
+
+
 
 # Create temporary dataframes for each video
 if Vid_Num == 1:
     df1a = df1
+    df1a['Frame'] = (df1a['Frame'] - df1a['Frame'][0]) #from each one minus the number of frames from the start of the first frame of the first red flash 
     Leftover_Events = trial_count - len(df1a.index)
-elif Vid_Num ==2: # snip off the end based on expected events
+    export_csv = df1a.to_csv (r'M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_df1a_00' + str(par) + '.csv', index = None, header=True) #Don't forget to add '.csv' at the end of the path
+elif Vid_Num == 2: # snip off the end based on expected events
     df1b = df1
     df1b['Time'] = df1b['Time'] + Vid_1_Dur[par]
     df1b = df1b.reset_index()
     df1b = df1b.drop(columns='index')
     df1b = df1b.drop(df1b.index[[list(range(Leftover_Events+1,len(df1b.index)))]]) #df1b.tail(1).index
-
-# Stitch together each video's temporary dataframes
-df1 = df1a.append(df1b, ignore_index=True) # concatenate event from seperate vides row-wise
-df1 = df1.drop(df1[df1.Event ==3].index)
-df1 = df1.reset_index()
-df1 = df1.drop(columns='index')
-#df1 = df1.drop(414)
+    # Stitch together each video's temporary dataframes
+    df1 = df1a.append(df1b, ignore_index=True) # concatenate event from seperate vides row-wise
+    df1 = df1.drop(df1[df1.Event ==3].index)
+    df1 = df1.reset_index()
+    df1 = df1.drop(columns='index')
+    #df1 = df1.drop(414)
 
 # Export only df1 to CSV - Or can also save a workspace 
 #export_csv = df1.to_csv (r'C:\Users\User\Desktop\export_dataframe_df1a_00' + str(par) + '.csv', index = None, header=True) #Don't forget to add '.csv' at the end of the path
-export_csv = df1.to_csv (r'C:\Users\User\Desktop\export_dataframe_df1_final_00' + str(par) + '.csv', index = None, header=True) #Don't forget to add '.csv' at the end of the path
+    export_csv = df1b.to_csv (r'M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_df1b_00' + str(par) + '.csv', index = None, header=True) #Don't forget to add '.csv' at the end of the path
 
-
+    export_csv = df1.to_csv (r'M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_df1_00' + str(par) + '.csv', index = None, header=True) #Don't forget to add '.csv' at the end of the path
+            
+            
 

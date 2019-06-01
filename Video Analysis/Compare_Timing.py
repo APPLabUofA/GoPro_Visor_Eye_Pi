@@ -8,6 +8,8 @@ from sklearn.linear_model import LinearRegression
 
 # %% Define Variables
 par = 3
+diff_outlier = 0 # automatically take out outliers in jitter between camera and eeg 
+outlier_def = 2 # number seconds of required jitter in order to be automatically disregarded
 
 # %% Load in the Camera timing form the temporary workspace or cvs file for the participant you are working with
 # If you want to work with group data - refer to Group_Figures.py
@@ -29,6 +31,12 @@ par = 3
 #df1b = df1b.drop(columns='index')
 #df1b.iloc[1:,]
 
+# %% To ensure event labeling accurate load in the data from the pi - Might have to turn events into a dataframe to fit in
+pi_times = pd.read_csv((r'C:\Users\User\Desktop\export_dataframe_df1c_00' + str(par) + '.csv', sep=',', header=True) # pilot
+pi_times = pi_times.T
+pi_times = pi_times[0,pi_times[0,:] == 1 | pi_times[0,:] == 2]
+
+df1['Event'] = pi_times
 # %% Load in EEG times
 
 filename = 'M:\Data\GoPro_Visor\Experiment_1\EEG_Data\\00' + str(par) + '_GoPro_Visor_Eye_Pi.vhdr' # pilot
@@ -53,19 +61,19 @@ df2 = df2.drop(columns='index')
 
 
 # %% Plotting (Latency/Difference, Raw/Transformed(all point, 2-point, long-tailed), scatter/line/historgrams)
-#all_onset_latencies = pd.concat([df1.assign(dataset='df1'), df2.assign(dataset='df2')])
 
-## RAW CAMERA TIMES
+# %% RAW CAMERA TIMES
+# Combine EEG and Camera Times/Events into one dataset
 df3 = df1.join(df2) # join eeg_times to pi_times
 df3 = df3.reset_index()
 df3['Difference (Seconds)'] = df3['eeg_times'] - df3['Time']
 df3 = df3.dropna()
-df3 = df3.drop(df3[abs(df3.Difference) > 2].index) # if there are still a few outliers - take them out with the following line
-#df1 = df1.drop(df1[df1.Event ==3].index)
-#Temp drop any rows from the df1 Dataframe and then rejoin with df2 to create a new df3
-# this is not something we would normally have to do, working back from video only - we would just miss 1% of events -
-# but can always make detection percentages better by tweaking detection parameters
-#Targ_Std_diff = df1.diff()
+
+if diff_outlier == 1 # # Need to take out an outlier? Remember to reset indices
+    df3 = df3.drop(df3[abs(df3.Difference) > outlier_def].index) # if there are still a few outliers - take them out with the following line
+    df3 = df3.reset_index()
+    df3 = df2.drop(columns='index')
+
 #Targ_Std_fin = df1.drop(Targ_Std_diff[Targ_Std_diff.Time < 0.2].index)
 
 # Latency plot
@@ -82,16 +90,15 @@ plt.show()
 
 # Difference plot
 plt.figure(1)
-plt.plot(df3['Difference'], df3['index'], label='EEG - Pi')
+plt.plot(df3['Difference (Seconds)'], df3['index'], label='EEG - Pi')
 legend = plt.legend(loc='upper left', shadow=True, fontsize='x-large')
 plt.xlabel('Latency (Seconds)')
 plt.ylabel('Trial Number')
 plt.title('Trial Number vs Difference - Par_00{}'.format(par))
 plt.show()
 
-
-#Seaborn Histogram Plots
-#Event Latency
+# Histogram Plots
+# Event Latency
 # EEG
 df3['EEG Times (s)'] = df3['eeg_times']
 plt.figure(figsize=(15,10))
@@ -111,30 +118,34 @@ plt.figure(figsize=(15,10))
 plt.tight_layout()
 plt.title('EEG-Camera Difference Distribution - Par_00{}'.format(par))
 plt.ylabel('Number of Trials')
-sns.distplot(df3['Difference (s)'])
+sns.distplot(df3['Difference (Seconds)'])
 
 
-# %% ##Linear Transform 
+
+
+# %% ## Transforms - LinearRegression().fit(X, y) X=Training data (camera times), y=Target Values (eeg times)
+
+# %% ## All Point Transform 
+
+# Prep Data
 trials = 441
 df4 = df3.copy() # copy DataFrame 
 df4 = df4.values # convert from Pandas DataFrame to a numpy structure
 df4 = np.append(df4, np.zeros((trials,3)), axis=1)
+X1 = df4[:,1].reshape(-1,1)
+y1 = df4[:,3].reshape(-1,1)
 
-
-# %% ## All Point Transform
-## LinearRegression().fit(X, y) X=Training data (camera times), y=Target Values (eeg times)
+#Equate and Test Regression
 model1 = LinearRegression()
-X = df4[:,1].reshape(-1,1)
-y = df4[:,3].reshape(-1,1)
-reg =  model1.fit(X,y) # From the pi times we are predicting the eeg times
+reg =  model1.fit(X1,y1) # From the pi times we are predicting the eeg times
 reg.score(df4[:,1].reshape(-1,1), df4[:,3].reshape(-1,1))
 df4[:,6] = df4[:,1]*reg.coef_ + reg.intercept_  # eeg times = camera_times X slope of 
 df4[:,7] = df4[:,3]-df4[:,6]
 # 1:index , 2:pi times, 3:pi events, 1:eeg_times, 2:eeg_trig 5:difference, 6:transformed difference, 7:difference between original difference and transformed difference
 
-
-
-# %% ## Transformed Difference plot
+# All Point Transform 
+# Difference plots
+# Line Plot
 plt.figure(123)
 plt.plot(df4[:,7], df4[:,0])
 #plt.plot(df4[:,10], df4[:,0]) #plot the magnitude of the difference 
@@ -146,7 +157,7 @@ plt.title('Trial Number vs Transformed Difference {}'.format(par))
 #plt.xlim([-0.00001, 0.00001])
 plt.show()
 
-# Difference
+# Distribution
 plt.figure(figsize=(15,10))
 plt.tight_layout()
 plt.title('EEG-Camera Difference Distribution - Par_00{}'.format(par))
@@ -154,10 +165,118 @@ plt.ylabel('Number of Trials')
 plt.xlabel('Difference (seconds)')
 sns.distplot(df4[:,7], rug = True, rug_kws={'color': 'black'})
 
-# %% Transform based on a linear regression based off of purely the first and last flashes
-# compare differences of each event
 
-#%% Comparison of Different Transforms
+
+
+
+# %% Two Point Transform
+
+# Prep Data - incl. construct Cap Structures
+df5 = df3.copy() # copy DataFrame 
+df5 = df5.values # convert from Pandas DataFrame to a numpy structure
+df5 = np.append(df5, np.zeros((trials,3)), axis=1)
+X2 = df5[:,1].reshape(-1,1) # pi_times first and last
+y2 = df5[:,1].reshape(-1,1) # eeg first & last
+
+#Equate and Test Regression
+model1 = LinearRegression()
+reg =  model1.fit(X,y) # From the pi times we are predicting the eeg times
+reg.score(df5[:,1].reshape(-1,1), df5[:,3].reshape(-1,1))
+df5[:,6] = df5[:,1]*reg.coef_ + reg.intercept_  # eeg times = camera_times X slope of 
+df5[:,7] = df5[:,3]-df5[:,6]
+# 1:index , 2:pi times, 3:pi events, 1:eeg_times, 2:eeg_trig 5:difference, 6:transformed difference, 7:difference between original difference and transformed difference
+
+
+# All Point Transform 
+# Difference plots
+# Line Plot
+plt.figure(123)
+plt.plot(df4[:,7], df5[:,0])
+#plt.plot(df4[:,10], df4[:,0]) #plot the magnitude of the difference 
+#plt.plot(df3['Difference'], df3['level_0'], label='EEG - Pi') # plot untransformed
+plt.legend('EEG - Pi', ncol=2, loc='upper left'); #  scalex=True, scaley=True if not using a custom xticks arguement
+plt.xlabel('Latency (miliseconds)')
+plt.ylabel('Trial Number')
+plt.title('Trial Number vs Transformed Difference {}'.format(par))
+#plt.xlim([-0.00001, 0.00001])
+plt.show()
+
+# Distribution
+plt.figure(figsize=(15,10))
+plt.tight_layout()
+plt.title('EEG-Camera Difference Distribution - Par_00{}'.format(par))
+plt.ylabel('Number of Trials')
+plt.xlabel('Difference (seconds)')
+sns.distplot(df5[:,7], rug = True, rug_kws={'color': 'black'})
+
+
+
+
+
+# %% Transform based on a linear regression based off of a 10 event tail (ignoring event type)
+
+# Prep Data - incl. construct Tail Structures
+df6 = df3.copy() # copy DataFrame 
+df6 = df6.values # convert from Pandas DataFrame to a numpy structure
+df6 = np.append(df6, np.zeros((trials,3)), axis=1) 
+
+1X3 = df6[0:10,3:5] # Pull out first 10 event from camera
+2X3 = df6[190:-1,3:5] # Pull out first 10 event from camera
+
+#1X3[:,1] = np.around(X3[:,1]), 
+#1X3.astype(float) 
+#2X3[:,1] = np.around(y3[:,1]), 
+#2X3.astype(float)
+#1X3 = 1X3.reshape(-1,1)
+#2X3 = 2X3.reshape(-1,1)
+X3 = np.concatenate(1X3, 2X3) # Combine first and last 10
+
+1y3 = df6[0:10,3:5] # Pull out first 10 event from camera
+2y3 = df6[190:-1,3:5] # Pull out first 10 event from camera
+
+#1y3[:,1] = np.around(1y3[:,1]), 
+#1y3.astype(float) 
+#2y3[:,1] = np.around(2y3[:,1]), 
+#2y3.astype(float)
+#1y3 = 1y3.reshape(-1,1)
+#2y3 = 2y3.reshape(-1,1)
+y3 = np.concatenate(1y3, 2y3) # Combine first and last 10
+
+
+#Equate and Test Regression
+model1 = LinearRegression()
+reg =  model1.fit(X3,y3) # From the pi times we are predicting the eeg times
+reg.score(df6[:,1].reshape(-1,1), df6[:,3].reshape(-1,1))
+df6[:,6] = df6[:,1]*reg.coef_ + reg.intercept_  # eeg times = camera_times X slope of 
+df6[:,7] = df6[:,3]-df6[:,6]
+# 1:index , 2:pi times, 3:pi events, 1:eeg_times, 2:eeg_trig 5:difference, 6:transformed difference, 7:difference between original difference and transformed difference
+
+
+# All Point Transform 
+# Difference plots
+# Line Plot
+plt.figure(123)
+plt.plot(df4[:,7], df4[:,0])
+#plt.plot(df4[:,10], df4[:,0]) #plot the magnitude of the difference 
+#plt.plot(df3['Difference'], df3['level_0'], label='EEG - Pi') # plot untransformed
+plt.legend('EEG - Pi', ncol=2, loc='upper left'); #  scalex=True, scaley=True if not using a custom xticks arguement
+plt.xlabel('Latency (miliseconds)')
+plt.ylabel('Trial Number')
+plt.title('Trial Number vs Transformed Difference {}'.format(par))
+#plt.xlim([-0.00001, 0.00001])
+plt.show()
+
+# Distribution
+plt.figure(figsize=(15,10))
+plt.tight_layout()
+plt.title('EEG-Camera Difference Distribution - Par_00{}'.format(par))
+plt.ylabel('Number of Trials')
+plt.xlabel('Difference (seconds)')
+sns.distplot(df4[:,7], rug = True, rug_kws={'color': 'black'})
+
+#%% Comparison of Difference between EEG and Camera Times after each Type of Transforms and Raw
 Raw_Diff_Sum = sum(abs(df3['Difference']))
-
+All_Point_Sum = 
+Two_Point_Sum = 
+Ten_Tail_Sum = 
 
