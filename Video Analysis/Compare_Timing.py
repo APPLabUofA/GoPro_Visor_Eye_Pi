@@ -8,12 +8,12 @@ from sklearn.linear_model import LinearRegression
 
 # %% Define Variables
 par = 3
-diff_outlier = 0 # automatically take out outliers in jitter between camera and eeg 
-outlier_def = 2 # number seconds of required jitter in order to be automatically disregarded
+diff_outlier = 0 # 0 = off, 1 == on - automatically take out outliers in jitter between camera and eeg 
+outlier_def = 10 # number seconds of required jitter in order to be automatically disregarded
 
 # %% Load in the Camera timing form the temporary workspace or cvs file for the participant you are working with
 # If you want to work with group data - refer to Group_Figures.py
-#df1 = pd.read_csv((r'C:\Users\User\Desktop\export_dataframe_df1c_00' + str(par) + '.csv', sep=',', header=True) # pilot
+df1 = pd.read_csv((r'M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_df1a_00' + str(par)) + '.csv', sep=',') # pilot
 #df1 = np.insert(df2,0,[0],axis = 0) #shift data one row down from the top so we don't miss the first event on o
 #df1 = pd.DataFrame(df1) 
 #df1.columns = ['Frame', 'Event'] # name columns - may need to add ['Adj_Index']
@@ -38,11 +38,20 @@ pi_times = pi_times[0,:]
 pi_times = np.delete(pi_times,(0,4))
 pi_times = pi_times.astype(int)
 
+#temp_diff = df1.diff() # take the difference vertically to find the time gap between each event
+#df1 = df1.drop(temp_diff[10 > temp_diff.Time < 0.5].index) # This will get rid of double detections (events within 0.2 seconds of each other)
+
 # Add into the camera time dataframe
 df1['Event_pi'] = pi_times[0:len(df1.index)]
 df1 = df1.drop(df1[(df1.Event_pi == 3)|(df1.Event_pi == np.nan)|(df1.Event_pi == 4)].index) # With the first event aligned - drop any event 3's according to the pi_times
 df1 = df1.drop([0]) # With the first event aligned - drop any event 3's according to the pi_times
 df1 = df1.reset_index() # resets index after removing events
+df1 = df1.drop(columns='index')
+
+# Take out any remain outliers
+temp_diff = df1.diff() # take the difference vertically to find the time gap between each event
+df1 = df1.drop(temp_diff[(temp_diff.Time < 1.5)].index) # |((temp_diff.Time[2:-1] > 3)&(temp_diff.Time[2:1] < 7)) # This will get rid of double detections (events within 0.2 seconds of each other)
+df1 = df1.reset_index() #moves the index over - #df1 = df1.reset_index() # may need a second one to recalibrate index to index_0
 df1 = df1.drop(columns='index')
 # %% Load in EEG times
 
@@ -73,13 +82,30 @@ df2 = df2.drop(columns='index')
 # Combine EEG and Camera Times/Events into one dataset
 df3 = df1.join(df2) # join eeg_times to pi_times
 df3 = df3.reset_index()
-df3['Difference (Seconds)'] = df3['eeg_times'] - df3['Time']
+df3['Difference'] = df3['eeg_times'] - df3['Time']
+df3 = df3.drop(columns='index')
 df3 = df3.dropna()
 
-if diff_outlier == 1 # # Need to take out an outlier? Remember to reset indices
-    df3 = df3.drop(df3[abs(df3.Difference) > outlier_def].index) # if there are still a few outliers - take them out with the following line
-    df3 = df3.reset_index()
-    df3 = df2.drop(columns='index')
+#if diff_outlier == 1 # # Need to take out an outlier? Remember to reset indices
+temp_df_diff = df3.diff()
+df3 = df3.drop(df3.Difference[(abs(df3.Difference) > 5)].index) # if there are still a few outliers - take them out with the following line
+df3 = df3.reset_index()
+df3 = df3.drop(columns='index')
+#df3 = df3.drop(columns='level_0')
+df3.eeg_times = df3.eeg_times.shift(-1) # if the start is offset - push it up and drop the misalinged
+
+# Manual Adjust
+df3['eeg_times'][247:-2] = df3['eeg_times'][249::]
+#    df3 = np.append(df3, np.zeros((3,6)), axis=0)
+df3 = np.insert(df2,0,[0],axis = 0) #shift data one row down from the top so we don't miss the first event on o
+df3 = df3.dropna()
+df3 = df3.reset_index()
+    
+
+
+# any remaining offset are missed frames
+# find the remaining offsets and readjust to the mean
+#df3['Difference'][248:-1].index = df3['Difference'][248:-1].index+1
 
 #Targ_Std_fin = df1.drop(Targ_Std_diff[Targ_Std_diff.Time < 0.2].index)
 
@@ -97,7 +123,7 @@ plt.show()
 
 # Difference plot
 plt.figure(1)
-plt.plot(df3['Difference (Seconds)'], df3['index'], label='EEG - Pi')
+plt.plot(df3['Difference'], df3['index'], label='EEG - Pi')
 legend = plt.legend(loc='upper left', shadow=True, fontsize='x-large')
 plt.xlabel('Latency (Seconds)')
 plt.ylabel('Trial Number')
@@ -125,7 +151,7 @@ plt.figure(figsize=(15,10))
 plt.tight_layout()
 plt.title('EEG-Camera Difference Distribution - Par_00{}'.format(par))
 plt.ylabel('Number of Trials')
-sns.distplot(df3['Difference (Seconds)'])
+sns.distplot(df3['Difference'])
 
 
 
@@ -135,19 +161,19 @@ sns.distplot(df3['Difference (Seconds)'])
 # %% ## All Point Transform 
 
 # Prep Data
-trials = 441
+trials = 434
 df4 = df3.copy() # copy DataFrame 
 df4 = df4.values # convert from Pandas DataFrame to a numpy structure
 df4 = np.append(df4, np.zeros((trials,3)), axis=1)
 X1 = df4[:,1].reshape(-1,1)
-y1 = df4[:,3].reshape(-1,1)
+y1 = df4[:,4].reshape(-1,1)
 
 #Equate and Test Regression
 model1 = LinearRegression()
 reg =  model1.fit(X1,y1) # From the pi times we are predicting the eeg times
-reg.score(df4[:,1].reshape(-1,1), df4[:,3].reshape(-1,1))
+reg.score(df4[:,1].reshape(-1,1), df4[:,4].reshape(-1,1))
 df4[:,6] = df4[:,1]*reg.coef_ + reg.intercept_  # eeg times = camera_times X slope of 
-df4[:,7] = df4[:,3]-df4[:,6]
+df4[:,7] = df4[:,4]-df4[:,6]
 # 1:index , 2:pi times, 3:pi events, 1:eeg_times, 2:eeg_trig 5:difference, 6:transformed difference, 7:difference between original difference and transformed difference
 
 # All Point Transform 
@@ -160,7 +186,7 @@ plt.plot(df4[:,7], df4[:,0])
 plt.legend('EEG - Pi', ncol=2, loc='upper left'); #  scalex=True, scaley=True if not using a custom xticks arguement
 plt.xlabel('Latency (miliseconds)')
 plt.ylabel('Trial Number')
-plt.title('Trial Number vs Transformed Difference {}'.format(par))
+plt.title('Trial Number vs Transformed Difference - Par_00{}'.format(par))
 #plt.xlim([-0.00001, 0.00001])
 plt.show()
 

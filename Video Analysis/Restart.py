@@ -133,15 +133,13 @@ cv2.destroyAllWindows()
 Trigger_Start_fin = Trigger_Start[0:ts_count,:]
 df1 = pd.DataFrame(Trigger_Start_fin) 
 df1.columns = ['Frame', 'Event'] 
-df1 = df1.drop(df1[df1.Event == 3].index) # This will get rid of red events (start + end of blocks/experiment)
+#df1 = df1.drop(df1[df1.Event == 3].index) # This will get rid of red events (start + end of blocks/experiment)
 df1['Frame'] = (df1['Frame']/fps) # Change from frame number to seconds from the start of the experiment
-temp_diff = df1.diff() # take the difference vertically to find the time gap between each event
-#df1 = df1.drop(temp_diff[temp_diff.Time < 0.2].index) # This will get rid of double detections (events within 0.2 seconds of each other)
 df1.columns = ['Time', 'Event']
+temp_diff = df1.diff() # take the difference vertically to find the time gap between each event
+df1 = df1.drop(temp_diff[(temp_diff.Time < 1.5)].index) # |((temp_diff.Time[2:-1] > 3)&(temp_diff.Time[2:1] < 7)) # This will get rid of double detections (events within 0.2 seconds of each other)
 df1 = df1.reset_index() #moves the index over - #df1 = df1.reset_index() # may need a second one to recalibrate index to index_0
 df1 = df1.drop(columns='index')
-
-
 
 # Create temporary dataframes for each video
 if Vid_Num == 1:
