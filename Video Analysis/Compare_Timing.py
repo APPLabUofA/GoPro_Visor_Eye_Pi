@@ -86,21 +86,21 @@ df3['Difference'] = df3['eeg_times'] - df3['Time']
 df3 = df3.drop(columns='index')
 df3 = df3.dropna()
 
-#if diff_outlier == 1 # # Need to take out an outlier? Remember to reset indices
-temp_df_diff = df3.diff()
-df3 = df3.drop(df3.Difference[(abs(df3.Difference) > 5)].index) # if there are still a few outliers - take them out with the following line
-df3 = df3.reset_index()
-df3 = df3.drop(columns='index')
-#df3 = df3.drop(columns='level_0')
-df3.eeg_times = df3.eeg_times.shift(-1) # if the start is offset - push it up and drop the misalinged
-
-# Manual Adjust
-df3['eeg_times'][247:-2] = df3['eeg_times'][249::]
-#    df3 = np.append(df3, np.zeros((3,6)), axis=0)
-df3 = np.insert(df2,0,[0],axis = 0) #shift data one row down from the top so we don't miss the first event on o
-df3 = df3.dropna()
-df3 = df3.reset_index()
-    
+##if diff_outlier == 1 # # Need to take out an outlier? Remember to reset indices
+#temp_df_diff = df3.diff()
+#df3 = df3.drop(df3.Difference[(abs(df3.Difference) > 5)].index) # if there are still a few outliers - take them out with the following line
+#df3 = df3.reset_index()
+#df3 = df3.drop(columns='index')
+##df3 = df3.drop(columns='level_0')
+#df3.eeg_times = df3.eeg_times.shift(-1) # if the start is offset - push it up and drop the misalinged
+#
+## Manual Adjust
+#df3['eeg_times'][247:-2] = df3['eeg_times'][249::]
+##    df3 = np.append(df3, np.zeros((3,6)), axis=0)
+#df3 = np.insert(df2,0,[0],axis = 0) #shift data one row down from the top so we don't miss the first event on o
+#df3 = df3.dropna()
+#df3 = df3.reset_index()
+#    
 
 
 # any remaining offset are missed frames
