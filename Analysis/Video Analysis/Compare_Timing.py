@@ -7,7 +7,7 @@ import seaborn as sns
 from sklearn.linear_model import LinearRegression
 
 # %% Define Variables
-par = 1
+par = 3
 diff_outlier = 0 # 0 = off, 1 == on - automatically take out outliers in jitter between camera and eeg 
 outlier_def = 10 # number seconds of required jitter in order to be automatically disregarded
 
@@ -113,22 +113,22 @@ plt.show()
 
 # Difference plot
 plt.figure(1)
-plt.plot(df3['Difference']*1000, df3['index'], label='EEG - Pi')
+plt.plot(df3['Difference']*1000, df3['index'], label='EEG - Camera')
 legend = plt.legend(loc='upper left', shadow=True, fontsize='x-large')
 plt.xlabel('Latency (ms)')
 plt.ylabel('Trial Number')
 plt.title('Trial Number vs Difference - Par_00{}'.format(par))
 plt.show()
 
-# Histogram Plots
+# Histogram Plots - Density Based
 # Event Latency
 # EEG
 plt.figure(2)
 df3['EEG Times (s)'] = df3['eeg_times']
 plt.figure(figsize=(15,10))
 plt.tight_layout()
-plt.title('EEG Event Latency Distribution - Par_00{}'.format(par))
-plt.ylabel('Number of Trials')
+plt.title('Raw EEG Latency Distribution - Par_00{}'.format(par))
+plt.ylabel('Density')
 sns.distplot(df3['EEG Times (s)'])
 
 # Camera
@@ -136,18 +136,21 @@ plt.figure(3)
 df3['Camera Times (s)'] = df3['Time']
 plt.figure(figsize=(15,10))
 plt.tight_layout()
-plt.title('Camera Event Latency Distribution - Par_00{}'.format(par))
-plt.ylabel('Number of Trials')
+plt.title('Raw Camera Latency Distribution - Par_00{}'.format(par))
+plt.ylabel('Density')
 sns.distplot(df3['Camera Times (s)'])
 
 # Difference
-df3['Difference Times (s)'] = df3['Event_Difference']
+#df3['Difference (ms)'] = df3['Event_Difference']
+df3['Difference (ms)'] = df3['Difference']
 plt.figure(4)
 plt.figure(figsize=(15,10))
 plt.tight_layout()
-plt.title('EEG-Camera Difference Distribution - Par_00{}'.format(par))
-plt.ylabel('Number of Trials')
-sns.distplot(df3['Difference'])
+plt.title('Trial Density vs Raw Difference - Par_00{}'.format(par))
+plt.ylabel('Density')
+sns.distplot(df3['Difference (ms)']*1000, bins = 12, rug = True, rug_kws={'color': 'black'})
+#.set_xlabel("ms")
+
 
 plt.figure(5)
 plt.plot(df3['Event_Difference'], df3['index'], label='EEG - Pi Event')
@@ -158,6 +161,41 @@ plt.title('Trial Number vs Event Difference - Par_00{}'.format(par))
 plt.xlim(-1,1,1)
 plt.xticks((range(-2,3,1)),(range(-2,3,1)))
 plt.show()
+
+
+# %% Trail Count Distribution
+
+*1000,  bins = 12, kde=False, rug = True, rug_kws={'color': 'black'}
+
+# EEG
+plt.figure(2)
+df3['EEG Times (s)'] = df3['eeg_times']
+plt.figure(figsize=(15,10))
+plt.tight_layout()
+plt.title('EEG Event Latency Distribution - Par_00{}'.format(par))
+plt.ylabel('Number of Trials')
+sns.distplot(df3['EEG Times (s)']*1000,  bins = 12, kde=False, rug = True, rug_kws={'color': 'black'})
+
+# Camera
+plt.figure(3)
+df3['Camera Times (s)'] = df3['Time']
+plt.figure(figsize=(15,10))
+plt.tight_layout()
+plt.title('Camera Event Latency Distribution - Par_00{}'.format(par))
+plt.ylabel('Number of Trials')
+sns.distplot(df3['Camera Times (s)']*1000,  bins = 12, kde=False, rug = True, rug_kws={'color': 'black'})
+
+# Difference
+df3['Difference Times (s)'] = df3['Event_Difference']
+plt.figure(4)
+plt.figure(figsize=(15,10))
+plt.tight_layout()
+plt.title('EEG-Camera Difference Distribution - Par_00{}'.format(par))
+plt.ylabel('Number of Trials')
+sns.distplot(df3['Difference']*1000,  bins = 12, kde=False, rug = True, rug_kws={'color': 'black'})
+
+
+
 
 
 
@@ -209,12 +247,37 @@ plt.show()
 plt.figure(6)
 plt.figure(figsize=(15,10))
 plt.tight_layout()
-plt.title('All Point Transformed EEG-Camera Difference Distribution - Par_00{}'.format(par))
+plt.title('All Point Transformed Latency Difference Distribution - Par_00{}'.format(par))
 plt.ylabel('Number of Trials')
 plt.xlabel('Difference (ms)')
 sns.distplot(df4[:,11]*1000, rug = True, rug_kws={'color': 'black'})
 
 
+
+# %% Trial Count Based Distribution
+
+plt.figure(6)
+plt.plot(df4[:,11]*1000, df4[:,0])
+#plt.plot(df4[:,10], df4[:,0]) #plot the magnitude of the difference 
+#plt.plot(df3['Difference'], df3['level_0'], label='EEG - Pi') # plot untransformed
+plt.legend('EEG - Pi', ncol=2, loc='upper left'); #  scalex=True, scaley=True if not using a custom xticks arguement
+plt.xlabel('Latency (ms)')
+plt.ylabel('Trial Number')
+plt.title('Trial Number vs Transformed Difference - Par_00{}'.format(par))
+#plt.xticks(np.arange(-0.002,0.003,0.001),(range(-2,3,1)))
+#plt.xlim([-0.00001, 0.00001])
+plt.show()
+
+
+
+# Distribution
+plt.figure(6)
+plt.figure(figsize=(15,10))
+plt.tight_layout()
+plt.title('All Point Transformed EEG-Camera Difference Distribution - Par_00{}'.format(par))
+plt.ylabel('Number of Trials')
+plt.xlabel('Difference (ms)')
+sns.distplot(df4[:,11]*1000, rug = True,kde=False rug_kws={'color': 'black'})
 
 
 
