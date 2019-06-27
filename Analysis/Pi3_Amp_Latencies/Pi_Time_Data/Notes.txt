@@ -1,9 +1,0 @@
-
-011
-Confirm that start/stop blocks are working + fixed missing 2+ start block triggers + confirmed time of a given 250 trial block ~ 570 seconds or ~ 10 minutes can reasonably run 4 blocks in a 2 hour session with a particpant defined break time of ~ 1 minute
-012
-times are accurate independent of internet connection
-013
-unique onset + offset + response triggers for each standard and target flashes
-014
-

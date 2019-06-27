@@ -51,93 +51,60 @@ try
             correct_rt = 0;
             incorrect_rt = 0;
             
-            if exp.preprocess == 2
-                if exp.uncorrected == 0%%%corrected/shifted
-                    
-                    load(['M:\Experiments\Visual P3\Times\' exp.participants{i_part} '_GoPro_Times.mat'])
-                    
-                    gopro_times = (flash_latencies_gp_adjusted_shifted-0.0628);
-                    
-                elseif exp.uncorrected == 1%%%uncorrected/unshifted (lined up with start of eeg, but no corrections are applied
-                    
-                    load(['M:\Experiments\Visual P3\Times\' exp.participants{i_part} '_GoPro_Times.mat'])
-                    
-                    gopro_times = flash_latencies_gp_shifted;
-                    
-                elseif exp.uncorrected == 2%%%not aligned with start of EEG recording, no corrections
-                    
-                    load(['M:\Experiments\Visual P3\Times\' exp.participants{i_part} '_GoPro_Times.mat'])
-                    
-                    gopro_times = flash_latencies_gp_nonshifted;
-                    
-                elseif exp.uncorrected == 3%%%aligned and shifted, but slope not corrected
-                    
-                    load(['M:\Experiments\Visual P3\Times\' exp.participants{i_part} '_GoPro_Times.mat'])
-                    
-                    gopro_times = (flash_latencies_gp_shifted+0.12043)-0.0628;
-                    
-                elseif exp.uncorrected == 4%%%aligned and corrected, but not shifted
-                    
-                    load(['M:\Experiments\Visual P3\Times\' exp.participants{i_part} '_GoPro_Times.mat'])
-                    
-                    gopro_times = (flash_latencies_gp_shifted*1.001);
-                    
-                elseif exp.uncorrected == 7%%%for this, we will use the aligned times,
-                    %%%and correct them for each individual participant
-                    
-                    load(['M:\Experiments\Visual P3\Times\' exp.participants{i_part} '_GoPro_Times.mat'])
-                    
-                    gopro_times = flash_latencies_gp_shifted;
-                    
-                    eeg_times = [];
-                    for i_event = 3:length(EEG.event)
-                        if strcmp(EEG.event(i_event).type, 'S  1') == 1
-                            eeg_times(i_event - 2) = EEG.event(i_event).latency/EEG.srate;
-                        elseif strcmp(EEG.event(i_event).type, 'S  2') == 1
-                            eeg_times(i_event - 2) = EEG.event(i_event).latency/EEG.srate;
-                        end
+            
+            if exp.preprocess == 1
+                for i_event = 1:allevents
+                    if EEG.event(i_event).type == "S  1"
+                        EEG.event(i_event).type = '1';
+                    elseif EEG.event(i_event).type == "S  2"
+                        EEG.event(i_event).type = '2'; 
                     end
-                    
-                    mdl = fitlm(gopro_times,eeg_times,'linear');
-                    adjustments = mdl.Coefficients.Estimate;
-                    
-                    gopro_times = ((gopro_times*adjustments(2,1))+adjustments(1,1));
-                    
-                elseif exp.uncorrected == 8%%%this will be for adjusted
-                    %%%camera times using the average
-                    %%%corrections
-                    
-                    load(['M:\Experiments\Visual P3\Times\' exp.participants{i_part} '_GoPro_Times.mat'])
-                    
-                    gopro_times = ((flash_latencies_gp_shifted*1.001) + 0.0641);
-                    
-                end
-                
-                load(['M:\Experiments\Visual P3\Times\' exp.participants{i_part} '_GoPro_Trials.mat'])
-                
-                EEG.event = [];
-                
-                for i_event = 1:length(gopro_times)
-                    EEG.event(i_event).latency =  floor(((gopro_times(i_event))*EEG.srate));
-                    if trial_type(i_event) == 1
-                        EEG.event(i_event).type = 'S  5';
-                    elseif trial_type(i_event) == 2
-                        EEG.event(i_event).type = 'S  6';
-                    end
-                end
-                allevents = length(EEG.event);
+                end         
             end
             
-            % %             other_times =[];
-            % %
-            % %             for i_event = 1:150
-            % %                other_times(i_event) = EEG.event(i_event+2).latency;
-            % %             end
+            if exp.preprocess == 2 
+                if exp.corrected == 1%%%aligned and corrected, and shifted
+                    T = readtable(strcat('M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_df3_whole_final_', exp.participants{i_part} ,'.csv'));
+                    gopro_times = table2array(T(1:height(T),2:3));
+                    gopro_times(:,1) = round(gopro_times(:,1).*1000);
+
+                    EEG.event_2 = [];
+                    start_offset = EEG.event(2).latency;
+
+                    for i_event = 1:length(gopro_times)
+                        if gopro_times(i_event,2) == 1
+                            EEG.event_2(i_event).type = '5';
+                        elseif gopro_times(i_event,2) == 2
+                            EEG.event_2(i_event).type = '6';
+                        end
+                        EEG.event_2(i_event).latency = gopro_times(i_event,1) + start_offset;
+
+                    end
+                    EEG.event = EEG.event_2; % replace the bv event stream with the gopro once transformed and aligned via difference of 1st and 2nd trig
+                    allevents = length(EEG.event);
+                    
+                    
+                elseif exp.corrected == 2%%%aligned and corrected, and shifted
+                    T = readtable(strcat('M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_df3_whole_final_', exp.participants{i_part} ,'.csv'));
+                    gopro_times = table2array(T(1:height(T),[14,3]));
+                    gopro_times(:,1) = round(gopro_times(:,1).*1000);
+                    
+                    EEG.event_2 = [];
+                    start_offset = EEG.event(2).latency;
+
+                    for i_event = 1:length(gopro_times)
+                        if gopro_times(i_event,2) == 1
+                            EEG.event_2(i_event).type = '5';
+                        elseif gopro_times(i_event,2) == 2
+                            EEG.event_2(i_event).type = '6';
+                        end
+                        EEG.event_2(i_event).latency = gopro_times(i_event,1) + start_offset;
+
+                    end
+                    EEG.event = EEG.event_2; % replace the bv event stream with the gopro once transformed and aligned via difference of 1st and 2nd trig
+                    allevents = length(EEG.event);
+                end
             
-            
-            for i_event = 2:allevents %skip the first
-                EEG.event(i_event).type = num2str(str2num(EEG.event(i_event).type(2:end)));
-                
             end
             
             %% The triggers are early
@@ -249,11 +216,14 @@ try
                     mkdir([exp.pathname '\' exp.settings '\Segments\' exp.setname{i_set} '\']);
                 end
                 %% Select individual events and Save
+                
+                Corrected = {'uncorrected','corrected'};
+                
                 EEG.exp = exp;
                 setEEG = EEG;   %replace the stored data with this new set
                 nevents = length(exp.events(i_set,:));
                 for i_event = 1:nevents
-                    filename = [exp.name '_' exp.settings '_' exp.participants{i_part} '_' exp.setname{i_set} '_' exp.event_names{i_set,i_event}]
+                    filename = [exp.name '_' exp.settings '_' exp.participants{i_part} '_' exp.setname{i_set} '_' exp.event_names{i_set,i_event} '_' Corrected{exp.corrected}]
                     eventEEG = pop_selectevent(setEEG, 'type', exp.events{i_set,i_event}, 'latency', ['0 <= ' num2str(exp.epochslims(2)*1000)], 'deleteevents','off','deleteepochs','on','invertepochs','off');
                     eventEEG = pop_saveset(eventEEG, 'filename',['Segments_' filename '.set'],'filepath',[exp.pathname  '\' exp.settings '\Segments\' exp.setname{i_set} '\'])
                 end
@@ -287,11 +257,11 @@ try
                     filename = [exp.name '_' exp.settings '_' exp.participants{i_part} '_' exp.setname{i_set} '_' exp.event_names{i_set,i_event}]
                     EEG = pop_loadset('filename',['Segments_' filename '.set'],'filepath',[exp.pathname  '\' exp.settings '\Segments\' exp.setname{i_set} '\']);
                     
-                    if strcmp('on',exp.tf) == 1 && strcmp('on',exp.singletrials) == 1;
+                    if strcmp('on',exp.tf) == 1 && strcmp('on',exp.singletrials) == 1
                         tfchannels = union(exp.tfelecs,exp.singletrialselecs)
-                    elseif strcmp('on',exp.tf) == 1 && strcmp('on',exp.singletrials) == 0;
+                    elseif strcmp('on',exp.tf) == 1 && strcmp('on',exp.singletrials) == 0
                         tfchannels = exp.tfelecs
-                    elseif strcmp('on',exp.tf) == 0 && strcmp('on',exp.singletrials) == 1;
+                    elseif strcmp('on',exp.tf) == 0 && strcmp('on',exp.singletrials) == 1
                         tfchannels = exp.singletrialselecs
                     end
                     

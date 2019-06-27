@@ -16,7 +16,7 @@ outlier_def = 10 # number seconds of required jitter in order to be automaticall
 
 #df1 = pd.read_csv((r'M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_df1a_Vid_1_00' + str(par)) + '.csv', sep=',',) # pilot
 
-df1 = pd.read_csv((r'M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_' + ws_name[whole_split] + '_Vid_0' + str(Vid_Num) + '_Par_00' + str(par) + '.csv', sep=',',) # pilot
+df1 = pd.read_csv((r'M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_' + ws_name[whole_split] + '_Vid_0' + str(Vid_Num) + '_Par_00' + str(par) + '.csv'), sep=',',) # pilot
 
 #df1 = df1a
 
@@ -84,7 +84,9 @@ df3['Difference'] = df3['eeg_times'] - df3['Time']
 df3 = df3.drop(df3.index[750:len(df3)])
 
 
-   
+# Misaligned dataframer due to indexing? Use one or both of the following lines to tweak
+#df3 = df3.drop(columns='index')
+#df3 = df3.drop(columns='level_0')   
 
 
 # %%
@@ -128,6 +130,7 @@ plt.tight_layout()
 plt.title('EEG Event Latency Distribution - Par_00{}'.format(par))
 plt.ylabel('Number of Trials')
 sns.distplot(df3['EEG Times (s)'])
+
 # Camera
 plt.figure(3)
 df3['Camera Times (s)'] = df3['Time']
@@ -136,14 +139,15 @@ plt.tight_layout()
 plt.title('Camera Event Latency Distribution - Par_00{}'.format(par))
 plt.ylabel('Number of Trials')
 sns.distplot(df3['Camera Times (s)'])
+
 # Difference
-df3['Difference Times (s)'] = df3['Time']
+df3['Difference Times (s)'] = df3['Event_Difference']
 plt.figure(4)
 plt.figure(figsize=(15,10))
 plt.tight_layout()
 plt.title('EEG-Camera Difference Distribution - Par_00{}'.format(par))
 plt.ylabel('Number of Trials')
-sns.distplot(df3['Difference Times (s)'])
+sns.distplot(df3['Difference'])
 
 plt.figure(5)
 plt.plot(df3['Event_Difference'], df3['index'], label='EEG - Pi Event')
@@ -182,6 +186,8 @@ df4[:,11] = df4[:,4]-df4[:,10]
 # 0:index , 1:pi times, 2:camera events, 3:pi_events, 4:eeg_times, 5:eeg_trig, 6:difference, 10:transformed difference, 11:difference between original difference and transformed difference
 
 df3['AP_Transform'] = df4[:,11]
+df3['AP_Trans_Raw'] = df4[:,10]
+
 # All Point Transform 
 # Difference plots
 # Line Plot

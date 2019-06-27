@@ -33,22 +33,16 @@ for i_set = 1:nsets
     end
 end
 
-% % Low Tones
-% % erpdata(1,1) = No_Headset
-% % erpdata(2,1) = Headset
-% %
-% % High Tones
-% % erpdata(1,2) = No_Headset
-% % erpdata(2,2) = Headset
-
+%%
+nametags = {'EEG Dervied','Camera Derived'}; %name the rows
 %%%%%THE FOLLOWING ARE FOR TONES FOR EACH PARTICIPANT, SEE BELOW FOR MEAN TONES%%%%%
-col = ['k','b';'k','r'];
-col = ['b','b';'r','r'];
+col = ['k','b';'k','b'];
+col = ['b','r';'b','r'];
 %%%%% Pick your condition 1 = EEG; 2 = Camera%%%%%
-cond1 = 1;
+cond1 = 2;
 cond2 = 2;
 %%%%%Pick your tone 1 = low; 2 = high%%%%%
-tone1 = 2;
+tone1 = 1;
 tone2 = 2;
 
 %%%%%ERPs for high/low tones%%%%%
@@ -61,26 +55,55 @@ for i_part = 1:nparts
     boundedline(EEG.times,erpdata_parts(cond1,tone1).cond(:,i_part),std(erpdata_parts(cond1,tone1).cond(:,i_part))./sqrt(length(exp.participants)),col(cond1,tone1),...
         EEG.times,erpdata_parts(cond2,tone2).cond(:,i_part),std(erpdata_parts(cond2,tone2).cond(:,i_part))./sqrt(length(exp.participants)),col(cond2,tone2));
 % %     
-% %         subplot(ceil(sqrt(nparts)),ceil(sqrt(nparts)),i_part);boundedline(EEG.times,erpdata_parts(cond1,tone2).cond(:,i_part)-erpdata_parts(cond1,tone1).cond(:,i_part),...
-% %             std(erpdata_parts(cond1,tone2).cond(:,i_part)-erpdata_parts(cond1,tone1).cond(:,i_part))./sqrt(length(exp.participants)),col(cond1,tone2));
+% % %         subplot(ceil(sqrt(nparts)),ceil(sqrt(nparts)),i_part);boundedline(EEG.times,erpdata_parts(cond1,tone2).cond(:,i_part)-erpdata_parts(cond1,tone1).cond(:,i_part),...
+% % %             std(erpdata_parts(cond1,tone2).cond(:,i_part)-erpdata_parts(cond1,tone1).cond(:,i_part))./sqrt(length(exp.participants)),col(cond1,tone2));
 % %     %%%%% epoched to last entrainer %%%%%
     xlim([-200 1000])
     ylim([-25  25])
     set(gca,'Ydir','reverse');
-    %%%%% epoched to last entrainegfhr %%%%%
-    line([0 0],[-10 10],'color','k');
+    line([0 0],[-15 15],'color','k');
 % %     line([300 300],[-10 10],'color','k'); %%%%use this to help find ERP regions
 % %     line([550 550],[-10 10],'color','k'); %%%%use this to help find ERP regions
     line([-200 1000],[0 0],'color','k');
-    title(['Participant ' num2str(i_part)]);
+    title(['Participant ' exp.participants(i_part)  nametags(cond1)]);
+    ylabel('Voltage (mV)')
+    xlabel('Time (ms)')
+%     xticks([200:100:1300])
+%     xticklabels([0:100:1100])
 end
  hold off;
+ 
+%% Group Figures
+
+sub_nums = {'003', '004'};
+nsubs = length(sub_nums);
+figure('Position',[25,25,1000,1000]); 
+widthHeight = ceil(sqrt(nsubs));
+
+for i_sub = 1:nsubs 
+    subplot(widthHeight,widthHeight,i_sub); 
+        boundedline(EEG.times,erpdata_parts(cond1,tone1).cond(:,i_sub),std(erpdata_parts(cond1,tone1).cond(:,i_sub))./sqrt(length(exp.participants)),col(cond1,tone1),...
+        EEG.times,erpdata_parts(cond2,tone2).cond(:,i_sub),std(erpdata_parts(cond2,tone2).cond(:,i_sub))./sqrt(length(exp.participants)),col(cond2,tone2));
+        xlim([-200 1000])
+        ylim([-25  25])
+        set(gca,'Ydir','reverse');
+        %%%%% epoched to last entrainegfhr %%%%%
+        line([0 0],[-15 15],'color','k');
+        line([-200 1000],[0 0],'color','k');
+        title(['Participant ' exp.participants(i_sub)  nametags(cond1)]);
+        ylabel('Voltage (mV)')
+        xlabel('Time (ms)')
+        hold on
+end
+
+ hold off
+ %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%THE FOLLOWING ARE FOR TONES%%%%%
 col = ['b','b';'r','r']; %%%uncomment to compare one tone type across conditions
 % % col = ['k','b';'k','r']; %%%uncomment for high and low tones
-%%%%% Pick your condition 1 = no headset; 2 = headset%%%%%
-cond1 = 1;
+%%%%% Pick your condition 1 = EEG; 2 = GoPro%%%%%
+cond1 = 2;
 cond2 = 2;
 %%%%%Pick your tone 1 = low; 2 = high%%%%%
 tone1 = 1;
@@ -98,10 +121,17 @@ xlim([-200 1000])
 ylim([-15 15])
 set(gca,'Ydir','reverse');
 %%%%% epoched to last entrainer %%%%%
-line([0 0],[-10 10],'color','k');
+line([0 0],[-15 15],'color','k');
 line([-200 1000],[0 0],'color','k');
-line([225 225],[-10 10],'color','k'); %%%%use this to help find ERP regions
-line([300 300],[-10 10],'color','k'); %%%%use this to help find ERP regions
+% line([225 225],[-15 15],'color','k'); %%%%use this to help find ERP regions
+% line([300 300],[-15 15],'color','k'); %%%%use this to help find ERP regions
+title([  nametags(cond1) 'Difference ERPs']);
+ylabel('Voltage (mV)')
+xlabel('Time (ms)')
+
+
+%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%Power Topoplots%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%% Pick your condition 1 = no headset; 2 = headset%%%%%

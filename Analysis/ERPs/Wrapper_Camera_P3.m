@@ -4,23 +4,24 @@ ccc
 
 %% Settings for loading the raw data
 exp.preprocess = 3; %%%set to 1 for EEG, 2 for Camera, 3 for LOADING PROPROCESSED DATA
-exp.uncorrected = 0; %%%do you want to use the uncorrected camera times?
-% % % 0 = corrected/shifted 
-% % % 1 = aligned, uncorrected/unshifted, 
-% % % 2 = not aligned, uncorrected/unshifted 
-% % % 3 = aligned, shifted, uncorrected 
-% % % 4 = aligned, corrected, unshifted
+exp.corrected = 2; %%% 1 = uncorrected, 2 = Corrected
+Corrected = {'uncorrected','corrected'};
 
-exp.participants = {'003';'004';'005';'006';'007';'008';'009';'010';'011'};
-exp.participants = {'003';'004';'005';'007';'008';'009';'010';'011'};
-% % exp.participants = {'010';'011'};
+exp.participants = {'003','004'};
+
+    % exp.participants = {'003','004','005','006'};
+    % exp.participants = {'003';'004';'005';'006';'007';'008';'009';'010';'011'};
+    % exp.participants = {'003';'004';'005';'007';'008';'009';'010';'011'};
+    % % exp.participants = {'010';'011'};
+
+    % Dataframe_df3_final_001.csv
 
 if exp.preprocess == 1
     %Datafiles must be in the format exp_participant, e.g. EEGexp_001.vhdr
-    exp.name = 'camera_p3';
-    
-    exp.pathname = 'M:\Experiments\Visual P3\EEG_Data';
-    
+    exp.name = 'GoPro_Visor_Eye_Pi';
+
+    exp.pathname = 'M:\Data\GoPro_Visor\Experiment_1\EEG_Data';
+
     exp.events = {[1],[2]};    %must be matrix (sets x events)
     exp.event_names = {'Low_Tones','High_Tones'}; %name the columns
 
@@ -29,10 +30,10 @@ if exp.preprocess == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif exp.preprocess == 2
     %Datafiles must be in the format exp_participant, e.g. EEGexp_001.vhdr
-    exp.name = 'camera_p3';
+    exp.name = 'GoPro_Visor_Eye_Pi';
 
-    exp.pathname = 'M:\Experiments\Visual P3\EEG_Data';
-    
+    exp.pathname = 'M:\Data\GoPro_Visor\Experiment_1\EEG_Data';
+
     exp.events = {[5],[6]};    %must be matrix (sets x events)
     exp.event_names = {'Low_Tones','High_Tones'}; %name the columns
 
@@ -41,10 +42,10 @@ elseif exp.preprocess == 2
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 elseif exp.preprocess == 3
     %Datafiles must be in the format exp_participant, e.g. EEGexp_001.vhdr
-    exp.name = 'camera_p3';
-    
-    exp.pathname = 'M:\Experiments\Visual P3\EEG_Data';
-    
+    exp.name = 'GoPro_Visor_Eye_Pi';
+
+    exp.pathname = 'M:\Data\GoPro_Visor\Experiment_1\EEG_Data';
+
     exp.events = {[1],[2];...
         [5],[6]};    %must be matrix (sets x events)
     exp.event_names = {'Low_Tones','High_Tones'}; %name the columns
@@ -63,7 +64,7 @@ exp.settings = 'Camera_P3';
 %segments settings
 exp.segments = 'on'; %Do you want to make new epoched datasets? Set to "off" if you are only changing the tf settings.
 %Where are your electrodes? (.ced file)
-exp.electrode_locs = 'M:\Analysis\Muse\eeg_analysis\16chanmuse.ced';
+exp.electrode_locs = 'VAMP_EOG_GoPro.ced';
 
 %% Filter the data?
 exp.filter = 'on';

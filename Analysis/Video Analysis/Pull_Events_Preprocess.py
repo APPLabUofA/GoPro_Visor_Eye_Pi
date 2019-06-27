@@ -57,7 +57,7 @@ if Vid_Num == 2 & whole_split == 0: # new data (2019) experiment 1, pilot 1
 
 if Vid_Num == 1 & whole_split == 1:
     start_flash = [0,15000,0,15700,7500,18000,9500,14100,14000] #15000
-    past_last = [0,0,0,486718,452939,0,0]
+    past_last = [0,0,0,486718,452939,448683,0]
  
 total_frames = past_last[par]-start_flash[par]
 Vid_1_Dur = [0,0,0,(253950-15000)/239.76023391812865,(253950-7500)/239.76023391812865] # The duration in time (s) of the first video (from the first flash - not including beginning)
@@ -73,15 +73,15 @@ frame_number = start_flash[par]
 change = 0
 col_check = 0
 ts_count = 0
-event_num = 0
+
 kernel = np.ones((5,5), np.uint8)
 event_num = 2
 
 
 col = ['green','blue','red']
-b_w8 = [0,1.2,0,1.5,1.5,1,1.6,1.3,1.4]
-g_w8 = [0,7,0,6,7,7,9,8,7.5]
-r_w8 = [0,1.2,0,1.55,1.3,1,1.35,1.3,1.4,1.05]
+b_w8 = [0,1.2,0,1.5,1.5,1.5,1.6,1.3,1.4]
+g_w8 = [0,7,0,6,7,7.5,9,8,7.5]
+r_w8 = [0,1.2,0,1.55,1.3,1.3,1.35,1.3,1.4,1.05]
 
 
 # %% Video Manipulation Functions
@@ -100,12 +100,12 @@ def equalizeHistColor(frame):
 cap = cv2.VideoCapture(in_file)
 out = cv2.VideoWriter(out_file,fourcc, 40, (424,240))
 cap.set(1, frame_number)
-fps = cap.get(cv2.CAP_PROP_FPS) 
+fps = cap.get(cv2.CAP_PROP_FPS)
 
 in_frame = True    
   
 while in_frame == True: 
-          
+
     if frame_number >= past_last[par]-1:
         in_frame = False
     cap.set(1,frame_number)
@@ -162,7 +162,7 @@ while in_frame == True:
             print("Frame number {} is flash event {} is {} -   green:{} -  blue:{} -  red:{}".format(frame_number,ts_count+1,col[event_num],int(g*g_w8[par]),int(b*b_w8[par]),int(r*r_w8[par])))
             ts_count += 1
 
-        
+
             if len(contours) != 0:
                 cv2.putText(img3, col[event_num], (x, y+h), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), lineType=cv2.LINE_AA) 
                 cv2.putText(img3, str(frame_number), (40,40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), lineType=cv2.LINE_AA) 
@@ -208,16 +208,21 @@ if Vid_Num == 1:
     temp_diff = df1.diff()                                  # Take the difference vertically to find the time gap between each event
     df1 = df1.drop(temp_diff[(temp_diff.Time < 1.5)].index) # |((temp_diff.Time[2:-1] > 3)&(temp_diff.Time[2:1] < 7)) # This will get rid of double detections (events within 0.2 seconds of each other)
     df1 = df1.reset_index()                                 # Moves the index over as a new coloumn
-    df1 = df1.drop(columns='index')                         # 
+    df1 = df1.drop(columns='index')                        # 
     Leftover_Events = trial_count - len(df1.index)          # used to ensure the right number of events are found in the remaining video
     df1a = df1
     export_csv = df1a.to_csv (r'M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_' + ws_name[whole_split] + '_Vid_0' + str(Vid_Num) + '_Par_00' + str(par) + '.csv', index = None, header=True) #Don't forget to add '.csv' at the end of the path
+
+# Manual Diagnosis of off targ nums
+    tempy_diff = df1.diff()
+
 
 elif Vid_Num == 2:                              # Very similar except that we do not subtract all events from the first - here we also compare detected events against expected
     Trigger_Start_fin = Trigger_Start[0:ts_count,:]
     df1 = pd.DataFrame(Trigger_Start_fin)
     df1.columns = ['Frame', 'Event']
     df1 = df1.drop(df1[df1.Event == 3].index)   # This will get rid of red events (start + end of blocks/experiment)
+#    df1['Frame'] = (df1['Frame']/fps)           # Change from frame number to seconds from the start of the experiment
     df1['Frame'] = (df1['Frame']/fps)           # Change from frame number to seconds from the start of the experiment
     df1.columns = ['Time', 'Event']             # Rename coloumn to reflect time 
     temp_diff = df1.diff()                      # take the difference vertically to find the time gap between each event
@@ -244,6 +249,10 @@ if stitch == 1:
 # export_csv = df1.to_csv (r'C:\Users\User\Desktop\export_dataframe_df1a_00' + str(par) + '.csv', index = None, header=True) #Don't forget to add '.csv' at the end of the path
 
 #    export_csv = df1.to_csv (r'M:\Data\GoPro_Visor\Experiment_1\Video_Times\Dataframe_' + ws_name[whole_split] + '_Vid_Full_Par_00' + str(par) + '.csv' index = None, header=True) #Don't forget to add '.csv' at the end of the path
-            
-            
+
+# %% 
+
+    
+    
+    
 
